@@ -94,6 +94,7 @@ export interface Look {
   theme: 'light' | 'dark';
   accent?: string;
   decor?: boolean;
+  animation?: 'none' | 'pop' | 'fade' | 'slide';
 }
 
 /** Görünüm ayarlarını (arayüz deposu, localStorage) yazar ve sayfayı yeniden yükler. */

@@ -104,6 +104,8 @@ const ROOT_KEY = '__root__';
 const NO_FOLDERS: Workspace[] = [];
 const NO_TABS: SavedTab[] = [];
 const NO_ROWS: PreviewRow[] = [];
+/** Sakura temasında düşen yaprak sayısı (canvas-scene.css her birine ayrı yol ve süre verir). */
+const PETALS = Array.from({ length: 10 }, (_, i) => i);
 
 /** Klasör başına görünüm (kaydırma/yakınlaştırma) bu oturum boyunca hatırlanır. */
 const viewMemory = new Map<string, View>();
@@ -870,6 +872,12 @@ export function Canvas({
     >
       {/* Tema süsü (Uzay: dönen galaksi); yalnızca CSS ile görünür, içeriğin arkasında kalır */}
       <div className="tf-canvas-art" aria-hidden="true" />
+      {/* Sakura: rüzgârda düşen yapraklar; yalnızca transform/opacity ile canlanır (GPU'da, ana iş parçacığını yormaz) */}
+      <div className="tf-canvas-petals" aria-hidden="true">
+        {PETALS.map((i) => (
+          <i key={i} />
+        ))}
+      </div>
       <div
         className="absolute top-0 left-0 origin-top-left"
         style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})` }}

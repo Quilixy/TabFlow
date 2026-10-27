@@ -8,6 +8,7 @@ import { expect, SAMPLE_LIBRARY, setLook, test, type Look } from './fixtures';
  *   npx playwright test e2e/visual.spec.ts --update-snapshots
  * Linux (CI) tabanları "Görsel tabanlar" iş akışıyla üretilip indirilebilir.
  * Süslerin konumu sabit tohumla üretilir; sonsuz animasyonlar başlangıç karesinde durdurulur.
+ * Görsel (SVG) içindeki animasyonları Playwright durduramaz; bu yüzden uygulamanın "Animasyon: Yok" ayarı kullanılır.
  */
 const LOOKS: (Look & { name: string })[] = [
   { name: 'default-light', pack: 'default', theme: 'light' },
@@ -34,7 +35,7 @@ test.describe('görsel karşılaştırma', () => {
       const app = await openApp();
       await app.setViewportSize({ width: 1280, height: 720 });
       await seed(SAMPLE_LIBRARY);
-      await setLook(app, look);
+      await setLook(app, { animation: 'none', ...look });
       await app.getByRole('treeitem', { name: /İş/ }).click();
       await expect(app.getByRole('group', { name: /Proje klasörü/ })).toBeVisible();
       await expect(app).toHaveScreenshot(`app-${look.name}.png`, SCREENSHOT);
@@ -47,7 +48,7 @@ test.describe('görsel karşılaştırma', () => {
       const popup = await openPopup();
       await popup.setViewportSize({ width: 380, height: 560 });
       await seed(SAMPLE_LIBRARY);
-      await setLook(popup, look);
+      await setLook(popup, { animation: 'none', ...look });
       await expect(popup.getByText('Okuma')).toBeVisible();
       await expect(popup).toHaveScreenshot(`popup-${look.name}.png`, SCREENSHOT);
     });
