@@ -4,14 +4,14 @@
 html[data-decor='on']:is([data-pack='sakura'], [data-pack='space']) [data-canvas]::before {
   content: ''; position: absolute; inset: 0; pointer-events: none; background-repeat: no-repeat;
 }
-/* Sakura: sol kenardan uzanan kiraz dalları (src/assets'teki SVG; bilerek durağan, bkz. dosyadaki not) */
+/* Sakura: sol alttan yükselen kiraz dalları (src/assets'teki SVG; bilerek durağan, bkz. dosyadaki not) */
 html[data-pack='sakura'][data-decor='on'] [data-canvas]::before {
   background-image: url('../assets/sakura-saf-agac-oshima.svg');
-  background-position: left top;
-  background-size: auto min(760px, 100%);
-  opacity: 0.9;
+  background-position: left bottom;
+  background-size: auto min(560px, 80%);
+  opacity: 0.5;
 }
-html[data-pack='sakura'][data-theme='dark'][data-decor='on'] [data-canvas]::before { opacity: 0.55; }
+html[data-pack='sakura'][data-theme='dark'][data-decor='on'] [data-canvas]::before { opacity: 0.32; }
 
 /* Sakura: dallardan düşen yapraklar (Canvas'taki .tf-canvas-petals > i). Yalnızca transform ve opacity
    canlandırılır; tarayıcı bunları GPU'da taşır, sayfa yeniden çizilmez. */
@@ -19,35 +19,36 @@ html[data-pack='sakura'][data-theme='dark'][data-decor='on'] [data-canvas]::befo
 html[data-pack='sakura'][data-decor='on']:not([data-anim='none']) .tf-canvas-petals {
   display: block; position: absolute; inset: 0; overflow: hidden; pointer-events: none;
 }
-html[data-pack='sakura'][data-theme='dark'] .tf-canvas-petals { opacity: 0.7; }
+html[data-pack='sakura'][data-decor='on'] .tf-canvas-petals { opacity: 0.75; }
+html[data-pack='sakura'][data-theme='dark'][data-decor='on'] .tf-canvas-petals { opacity: 0.5; }
 .tf-canvas-petals i {
   position: absolute; width: calc(19px * var(--s, 1)); aspect-ratio: 20 / 19; opacity: 0;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-10 -18 20 19'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='1' x2='0' y2='0'%3E%3Cstop offset='0' stop-color='%23e98fb3'/%3E%3Cstop offset='.55' stop-color='%23f8bfd5'/%3E%3Cstop offset='1' stop-color='%23ffe9f1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 0C-5.5 -3.5 -9.5 -11 -4.5 -16C-2.2 -18 0 -14.8 0 -12.5C.8 -14.8 2.8 -18 5 -16C9.5 -11 5.5 -3.5 0 0Z' fill='url(%23g)' stroke='%23d97aa0' stroke-width='.7'/%3E%3C/svg%3E") center / contain no-repeat;
   animation: tf-petal-a 13s linear infinite; will-change: transform, opacity;
 }
-.tf-canvas-petals i:nth-child(1) { left: 70px; top: 18%; --s: 1; animation: tf-petal-a 13s linear -1s infinite; }
-.tf-canvas-petals i:nth-child(2) { left: 160px; top: 30%; --s: 0.8; animation: tf-petal-b 11s linear -4s infinite; }
-.tf-canvas-petals i:nth-child(3) { left: 250px; top: 14%; --s: 0.9; animation: tf-petal-a 14s linear -7s infinite; }
-.tf-canvas-petals i:nth-child(4) { left: 330px; top: 36%; --s: 1.1; animation: tf-petal-b 12s linear -2.5s infinite; }
-.tf-canvas-petals i:nth-child(5) { left: 120px; top: 48%; --s: 0.75; animation: tf-petal-a 15s linear -9s infinite; }
-.tf-canvas-petals i:nth-child(6) { left: 400px; top: 22%; --s: 0.85; animation: tf-petal-b 13.5s linear -5.5s infinite; }
-.tf-canvas-petals i:nth-child(7) { left: 210px; top: 55%; --s: 1; animation: tf-petal-a 12.5s linear -11s infinite; }
-.tf-canvas-petals i:nth-child(8) { left: 40px; top: 34%; --s: 0.9; animation: tf-petal-b 16s linear -3.5s infinite; }
-.tf-canvas-petals i:nth-child(9) { left: 300px; top: 8%; --s: 0.8; animation: tf-petal-a 11.5s linear -8s infinite; }
-.tf-canvas-petals i:nth-child(10) { left: 450px; top: 42%; --s: 1; animation: tf-petal-b 14.5s linear -12.5s infinite; }
+.tf-canvas-petals i:nth-child(1) { left: 52px; top: calc(100% - min(560px, 80%) * 0.82); --s: 1; animation: tf-petal-a 13s linear -1s infinite; }
+.tf-canvas-petals i:nth-child(2) { left: 118px; top: calc(100% - min(560px, 80%) * 0.7); --s: 0.8; animation: tf-petal-b 11s linear -4s infinite; }
+.tf-canvas-petals i:nth-child(3) { left: 185px; top: calc(100% - min(560px, 80%) * 0.86); --s: 0.9; animation: tf-petal-a 14s linear -7s infinite; }
+.tf-canvas-petals i:nth-child(4) { left: 244px; top: calc(100% - min(560px, 80%) * 0.64); --s: 1.1; animation: tf-petal-b 12s linear -2.5s infinite; }
+.tf-canvas-petals i:nth-child(5) { left: 89px; top: calc(100% - min(560px, 80%) * 0.52); --s: 0.75; animation: tf-petal-a 15s linear -9s infinite; }
+.tf-canvas-petals i:nth-child(6) { left: 296px; top: calc(100% - min(560px, 80%) * 0.78); --s: 0.85; animation: tf-petal-b 13.5s linear -5.5s infinite; }
+.tf-canvas-petals i:nth-child(7) { left: 155px; top: calc(100% - min(560px, 80%) * 0.45); --s: 1; animation: tf-petal-a 12.5s linear -11s infinite; }
+.tf-canvas-petals i:nth-child(8) { left: 30px; top: calc(100% - min(560px, 80%) * 0.66); --s: 0.9; animation: tf-petal-b 16s linear -3.5s infinite; }
+.tf-canvas-petals i:nth-child(9) { left: 222px; top: calc(100% - min(560px, 80%) * 0.92); --s: 0.8; animation: tf-petal-a 11.5s linear -8s infinite; }
+.tf-canvas-petals i:nth-child(10) { left: 333px; top: calc(100% - min(560px, 80%) * 0.58); --s: 1; animation: tf-petal-b 14.5s linear -12.5s infinite; }
 @keyframes tf-petal-a {
   0% { transform: translate(0, 0) rotate(0deg) rotateY(0deg); opacity: 0; }
   8% { opacity: 0.95; }
-  50% { transform: translate(130px, 190px) rotate(150deg) rotateY(180deg); }
+  50% { transform: translate(100px, 115px) rotate(150deg) rotateY(180deg); }
   86% { opacity: 0.85; }
-  100% { transform: translate(270px, 420px) rotate(320deg) rotateY(360deg); opacity: 0; }
+  100% { transform: translate(210px, 230px) rotate(320deg) rotateY(360deg); opacity: 0; }
 }
 @keyframes tf-petal-b {
   0% { transform: translate(0, 0) rotate(-20deg) rotateX(0deg); opacity: 0; }
   10% { opacity: 0.9; }
-  35% { transform: translate(90px, 120px) rotate(-90deg) rotateX(140deg); }
-  65% { transform: translate(60px, 270px) rotate(-200deg) rotateX(260deg); opacity: 0.85; }
-  100% { transform: translate(200px, 400px) rotate(-340deg) rotateX(360deg); opacity: 0; }
+  35% { transform: translate(70px, 75px) rotate(-90deg) rotateX(140deg); }
+  65% { transform: translate(45px, 160px) rotate(-200deg) rotateX(260deg); opacity: 0.85; }
+  100% { transform: translate(165px, 225px) rotate(-340deg) rotateX(360deg); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .tf-canvas-petals { display: none !important; }
