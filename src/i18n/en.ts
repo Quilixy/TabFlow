@@ -327,4 +327,7 @@ export const en: Messages = {
   'autoExport.last': 'Last backup to disk: {ago}',
   'autoExport.never': 'No backup to disk yet',
   'autoExport.changed': 'Automatic backup to disk: {interval}.',
+  // Yan panel
+  'popup.openSidePanel': 'Open in side panel',
+  'popup.sidePanelHint': 'The side panel stays open while you browse.',
 };

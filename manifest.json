@@ -47,6 +47,10 @@
     "favicon",
     "contextMenus",
     "tabGroups",
-    "downloads"
-  ]
+    "downloads",
+    "sidePanel"
+  ],
+  "side_panel": {
+    "default_path": "src/sidepanel/index.html"
+  }
 }

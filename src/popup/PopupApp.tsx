@@ -11,7 +11,8 @@ import {
 import { FolderComposer, type ComposerMode } from '../components/FolderComposer';
 import { Button } from '../components/ui/Button';
 import { ErrorBanner } from '../components/ui/ErrorBanner';
-import { CheckIcon, ExpandIcon, PlusIcon, SearchIcon } from '../components/ui/icons';
+import { CheckIcon, ExpandIcon, PlusIcon, SearchIcon, SidePanelIcon } from '../components/ui/icons';
+import { IconButton } from '../components/ui/IconButton';
 import { PopupFolderRow } from '../components/popup/PopupFolderRow';
 import { Toast } from '../components/ui/Toast';
 import type { SavedTab, Workspace } from '../types';
@@ -43,7 +44,13 @@ const ADDED_FEEDBACK_MS = 1600;
 /** Bu sayıdan fazla sekme tek hamlede açılacaksa onay istenir (tam ekran uygulamayla aynı eşik). */
 const RESTORE_CONFIRM_THRESHOLD = 25;
 
-export default function PopupApp() {
+interface PopupAppProps {
+  /** 'popup': araç çubuğu açılır penceresi (sabit boyut); 'panel': tarayıcının yan paneli (pencere boyunca). */
+  layout?: 'popup' | 'panel';
+}
+
+export default function PopupApp({ layout = 'popup' }: PopupAppProps) {
+  const isPanel = layout === 'panel';
   const { workspaces, isLoading, error, createFolder, createFolderWithTab, saveAndClose, addOpenTab, openTab } =
     useWorkspaces();
 
@@ -93,18 +100,33 @@ export default function PopupApp() {
     return result;
   }, [treeRows, hasQuery, q]);
 
-  // Aktif sayfa hangi klasörlerde kayıtlı? (Popup her açılışta bir kez okur; kaydedilemeyen sayfada null.)
+  // Aktif sayfa hangi klasörlerde kayıtlı? (Kaydedilemeyen sayfada null.) Popup her açılışta bir kez okur; yan panel
+  // açık kaldığı için sekme değiştikçe ya da sayfa gezindikçe yeniden okur.
   const [activeUrl, setActiveUrl] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
-    queryActiveTab().then(
-      (tab) => {
-        if (!cancelled) setActiveUrl(tab.url);
-      },
-      () => undefined,
-    );
+    const refresh = () => {
+      queryActiveTab().then(
+        (tab) => {
+          if (!cancelled) setActiveUrl(tab.url);
+        },
+        () => {
+          if (!cancelled) setActiveUrl(null);
+        },
+      );
+    };
+    refresh();
+    const onUpdated = (_id: number, info: chrome.tabs.OnUpdatedInfo, tab: chrome.tabs.Tab) => {
+      if (tab.active && info.url !== undefined) refresh();
+    };
+    chrome.tabs.onActivated.addListener(refresh);
+    chrome.tabs.onUpdated.addListener(onUpdated);
+    chrome.windows.onFocusChanged.addListener(refresh);
     return () => {
       cancelled = true;
+      chrome.tabs.onActivated.removeListener(refresh);
+      chrome.tabs.onUpdated.removeListener(onUpdated);
+      chrome.windows.onFocusChanged.removeListener(refresh);
     };
   }, []);
 
@@ -363,6 +385,17 @@ export default function PopupApp() {
     }
     chrome.runtime
       .openOptionsPage()
+      .then(() => {
+        if (!isPanel) window.close(); // Yan panel açık kalır
+      })
+      .catch((e) => showError(getErrorMessage(e)));
+  };
+
+  /** Bu pencerenin yan panelini açar ve popup'ı kapatır (kullanıcı tıklamasıyla çağrılmalı). */
+  const openSidePanel = () => {
+    chrome.windows
+      .getCurrent()
+      .then((win) => (win.id === undefined ? undefined : chrome.sidePanel.open({ windowId: win.id })))
       .then(() => window.close())
       .catch((e) => showError(getErrorMessage(e)));
   };
@@ -371,9 +404,16 @@ export default function PopupApp() {
   const bannerMessage = errorMessage ?? error?.message ?? null;
 
   return (
-    <main className="flex h-[560px] max-h-[600px] w-[380px] flex-col gap-3 p-3">
-      <header className="flex shrink-0 items-center justify-between">
-        <h1 className="text-base font-semibold text-gray-900">TabFlow</h1>
+    <main
+      className={`flex flex-col gap-3 p-3 ${isPanel ? 'h-full w-full min-w-0' : 'h-[560px] max-h-[600px] w-[380px]'}`}
+    >
+      <header className="flex shrink-0 items-center gap-1">
+        <h1 className="mr-auto text-base font-semibold text-gray-900">TabFlow</h1>
+        {!isPanel && (
+          <IconButton label={t('popup.openSidePanel')} title={t('popup.sidePanelHint')} onClick={openSidePanel}>
+            <SidePanelIcon />
+          </IconButton>
+        )}
         <Button variant="secondary" size="sm" onClick={() => openFullApp()}>
           <ExpandIcon />
           {t('popup.openFull')}

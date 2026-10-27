@@ -325,6 +325,9 @@ export const tr = {
   'autoExport.last': 'Son diske yedek: {ago}',
   'autoExport.never': 'Henüz diske yedek alınmadı',
   'autoExport.changed': 'Diske otomatik yedek: {interval}.',
+  // Yan panel
+  'popup.openSidePanel': 'Yan panelde aç',
+  'popup.sidePanelHint': 'Yan panel tarama sırasında açık kalır.',
 } satisfies Record<string, MessageEntry>;
 
 export type Messages = { [K in keyof typeof tr]: MessageEntry };

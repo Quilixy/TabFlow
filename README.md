@@ -11,6 +11,7 @@ Sekmelerini klasörlere ve serbest bir tuvale kaydet, kapat ve saniyeler içinde
 - **Sıralama ve sabitleme:** ağaçta bir klasörü başka bir satırın üst/alt kenarına sürükleyerek sırala (`Alt+↑/↓` da olur); "Üste sabitle" ile sık kullanılanları en üstte tut.
 - **Tuvalde çoklu seçim:** `Ctrl`/`Shift` + tık ile seç, `Shift` + boş alanda sürükleyerek alan seç, `Ctrl+A` ile tümünü seç. Seçilenleri birlikte sürükle, bir klasöre bırak, sağ tıkla taşı ya da `Delete` ile sil.
 - **Türkçe ve İngilizce arayüz:** *Görünüm → Dil* (Otomatik tarayıcının dilini izler). Eklentinin adı, açıklaması ve kısayol açıklamaları da çevrilidir.
+- **Yan panel:** popup'taki 'Yan panelde aç' ile aynı arayüz tarayıcının yan panelinde açılır ve tarama sırasında açık kalır; sekme değiştikçe 'zaten kayıtlı' göstergesi güncellenir.
 - **Popup:** aktif sayfa kayıtlıysa hangi klasörlerde olduğunu gösterir; arama sonuçlarında ok tuşlarıyla gezilir (`↓` sonuçlara iner, `→`/`←` klasörü açar/kapatır).
 - Türkçe karakterlere duyarlı arama: "istanbul" → "İstanbul", "calisma" → "Çalışma".
 - Çok sayıda sekme açılırken ilk 10'u yüklenir, kalanlar tıklanınca yüklenir (RAM şişmez).
@@ -65,6 +66,7 @@ Her push ve pull request'te GitHub Actions tip kontrolü, lint, birim testleri, 
 | `contextMenus` | Sayfa ve bağlantılarda "TabFlow'a kaydet" menüsü |
 | `tabGroups` | Klasörü adı ve rengiyle bir sekme grubu olarak açmak |
 | `downloads` | Otomatik yedeği diske (İndirilenler/TabFlow) yazmak |
+| `sidePanel` | Arayüzü tarayıcının yan panelinde açmak |
 
 Veriler yalnızca bu tarayıcıda (`chrome.storage.local`) tutulur; hiçbir sunucuya gönderilmez.
 
@@ -99,6 +101,7 @@ public/_locales/  manifest metinleri (ad, açıklama, kısayollar)
 src/
   background/   service worker (kısayollar, sağ tık menüsü, otomatik yedek)
   popup/        araç çubuğu açılır penceresi
+  sidepanel/    yan panel (popup arayüzü, pencere boyunca)
   app/          tam ekran uygulama
   components/   arayüz bileşenleri (app/, popup/, ui/)
   hooks/        depolama, sekme ve onay kancaları
