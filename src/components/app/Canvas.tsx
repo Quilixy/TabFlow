@@ -868,6 +868,8 @@ export function Canvas({
       }}
       className={`relative h-full w-full overflow-hidden bg-gray-50 outline-none ${isPanning ? 'cursor-grabbing' : 'cursor-default'}`}
     >
+      {/* Tema süsü (Uzay: dönen galaksi); yalnızca CSS ile görünür, içeriğin arkasında kalır */}
+      <div className="tf-canvas-art" aria-hidden="true" />
       <div
         className="absolute top-0 left-0 origin-top-left"
         style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})` }}
