@@ -22,14 +22,28 @@ const openApp = () => {
 // ---- Sağ tık menüsü: "TabFlow'a kaydet → klasör" ------------------------------------
 let menuSignature = '';
 let menuTimer: ReturnType<typeof setTimeout> | undefined;
+/** Kurulumlar sıraya girer: üst üste binen iki kurulum aynı kimlikle öğe yaratıp hata verirdi. */
+let menuQueue: Promise<void> = Promise.resolve();
+
+function rebuildMenus(force = false): Promise<void> {
+  const run = menuQueue.then(() => rebuildMenusNow(force));
+  menuQueue = run.catch(() => undefined);
+  return run;
+}
+
+/** create/removeAll hataları geri çağrıda okunmazsa Chrome "Unchecked runtime.lastError" yazar. */
+const logMenuError = () => {
+  const error = chrome.runtime.lastError;
+  if (error) console.warn('[TabFlow] menü öğesi oluşturulamadı:', error.message);
+};
 
 /** Menüyü klasörlere göre yeniden kurar; içerik değişmediyse dokunmaz (kart sürüklemek de depoya yazar). */
-async function rebuildMenus(force = false): Promise<void> {
+async function rebuildMenusNow(force: boolean): Promise<void> {
   const [map, lastFolderId] = await Promise.all([readWorkspaces(), readKey<string | null>(LAST_FOLDER_KEY, null)]);
   const items = contextMenuItems(map, lastFolderId);
   const signature = JSON.stringify(items);
   if (!force && signature === menuSignature) return;
-  menuSignature = signature;
+  menuSignature = '';
 
   await chrome.contextMenus.removeAll();
   for (const item of items) {
@@ -39,8 +53,9 @@ async function rebuildMenus(force = false): Promise<void> {
       contexts: ['page', 'link'],
       // Yalnızca web sayfaları ve web bağlantıları kaydedilebilir.
       documentUrlPatterns: ['http://*/*', 'https://*/*'],
-    } as chrome.contextMenus.CreateProperties);
+    } as chrome.contextMenus.CreateProperties, logMenuError);
   }
+  menuSignature = signature;
 }
 
 function scheduleMenuRebuild() {
