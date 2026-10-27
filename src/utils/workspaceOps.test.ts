@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import type { SavedTab, Workspace, WorkspaceMap } from '../types';
 import type { TrashEntry } from './trash';
 import { buildChildrenIndex, normalizeWorkspaces } from './workspaceTree';
-import { appendTab, reorderFolder, restoreTrashEntry, setFolderFavorite } from './workspaceOps';
+import {
+  appendTab,
+  moveItems,
+  removeItems,
+  reorderFolder,
+  restoreTrashEntry,
+  setFolderFavorite,
+} from './workspaceOps';
 
 const tab = (id: string, url: string): SavedTab => ({ id, url, title: url, favIconUrl: null, pinned: false, x: 0, y: 0 });
 const folder = (id: string, tabs: SavedTab[] = [], parentId: string | null = null): Workspace => ({
@@ -114,5 +121,52 @@ describe('klasör sırası ve sabitleme', () => {
     const moved = setFolderFavorite(reorderFolder(base(), 'c', 'a', 'before', 5), 'b', true);
     const roundTrip = normalizeWorkspaces(JSON.parse(JSON.stringify(moved)));
     expect(names(roundTrip)).toEqual(['b', 'c', 'a']);
+  });
+});
+
+describe('toplu işlemler', () => {
+  const sample = (): WorkspaceMap => ({
+    src: folder('src', [tab('t1', 'https://1.com'), tab('t2', 'https://2.com'), tab('t3', 'https://3.com')]),
+    dst: folder('dst', [tab('d1', 'https://2.com')]),
+    sub: folder('sub', [], 'src'),
+    deep: folder('deep', [], 'sub'),
+  });
+
+  it('seçili sekmeleri ve klasörleri tek seferde taşır; hedefte olan URL atlanır', () => {
+    const r = moveItems(sample(), 'src', ['t1', 't2'], ['sub'], 'dst', false, 7);
+    expect(r).toMatchObject({ movedTabs: 1, duplicateTabs: 1, movedFolders: 1, skippedFolders: 0 });
+    expect(r.map.dst.tabs.map((t) => t.url)).toEqual(['https://2.com', 'https://1.com']);
+    expect(r.map.src.tabs.map((t) => t.id)).toEqual(['t2', 't3']);
+    expect(r.map.sub.parentId).toBe('dst');
+  });
+
+  it('kopyalarken kaynağa dokunmaz ve yeni kimlik verir', () => {
+    const r = moveItems(sample(), 'src', ['t1'], [], 'dst', true, 7);
+    expect(r.map.src.tabs).toHaveLength(3);
+    const copied = r.map.dst.tabs.find((t) => t.url === 'https://1.com');
+    expect(copied?.id).not.toBe('t1');
+  });
+
+  it('klasörü kendi alt klasörüne taşımaz; hiçbir şey değişmezse haritayı aynen döndürür', () => {
+    const start = sample();
+    const r = moveItems(start, null, [], ['src'], 'deep', false, 7);
+    expect(r.skippedFolders).toBe(1);
+    expect(r.map).toBe(start);
+  });
+
+  it('seçilenleri kaldırır; iç içe seçilen klasör tek kayıt olur', () => {
+    const { map, entries } = removeItems(sample(), 'src', ['t1', 't3'], ['sub', 'deep'], 9);
+    expect(map.sub).toBeUndefined();
+    expect(map.deep).toBeUndefined();
+    expect(map.src.tabs.map((t) => t.id)).toEqual(['t2']);
+    expect(entries.map((e) => e.kind)).toEqual(['folder', 'tab', 'tab']);
+  });
+
+  it('kaldırılanlar kayıtlarından eski sırasıyla geri gelir', () => {
+    const start = sample();
+    const { map, entries } = removeItems(start, 'src', ['t1', 't3'], ['sub'], 9);
+    const restored = entries.reduce((m, e) => restoreTrashEntry(m, e, 10), map);
+    expect(restored.src.tabs.map((t) => t.id)).toEqual(['t1', 't2', 't3']);
+    expect(restored.deep.parentId).toBe('sub');
   });
 });

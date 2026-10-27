@@ -11,6 +11,8 @@ import type { Snapshot } from '../utils/snapshots';
 import { normalizeTrash, pushTrash, removeTrashEntry, type TrashEntry } from '../utils/trash';
 import {
   appendTab,
+  moveItems as moveItemsOp,
+  removeItems as removeItemsOp,
   reorderFolder as reorderFolderOp,
   restoreTrashEntry,
   setFolderFavorite,
@@ -256,17 +258,32 @@ export function useWorkspaces() {
 
   // ---- Çöp kutusu --------------------------------------------------------------
 
-  /** Çöp kutusundaki öğeyi geri yükler ve listeden kaldırır. Öğe zaten yoksa false. */
-  const restoreFromTrash = useCallback(
-    async (entryId: string): Promise<boolean> => {
-      const entry = normalizeTrash(await readKey<unknown>(TRASH_KEY, NO_TRASH)).find((e) => e.id === entryId);
-      if (!entry) return false;
-      // Önce geri koy, sonra listeden sil: arada hata olursa öğe çöp kutusunda kalır (geri yükleme tekrarlanabilir).
-      await update((current) => restoreTrashEntry(current, entry, Date.now()));
-      await updateTrash((entries) => removeTrashEntry(entries, entryId));
+  /**
+   * Çöp kutusundaki öğeleri (tek yazmada) geri yükler ve listeden kaldırır. Hiçbiri yoksa false.
+   * Önce geri konur, sonra listeden silinir: arada hata olursa öğeler çöp kutusunda kalır (tekrarlanabilir).
+   */
+  const restoreManyFromTrash = useCallback(
+    async (entryIds: string[]): Promise<boolean> => {
+      const wanted = new Set(entryIds);
+      const found = normalizeTrash(await readKey<unknown>(TRASH_KEY, NO_TRASH)).filter((e) => wanted.has(e.id));
+      if (found.length === 0) return false;
+      // Sekmeler eski sıralarına yerleşsin: aynı klasördeki kayıtlar küçük konumdan büyüğe uygulanır.
+      // Klasörler önce (sekmelerin klasörü onlarla geri gelebilir), sekmeler eski konum sırasıyla.
+      const rank = (e: TrashEntry) => (e.kind === 'folder' ? -1 : e.index);
+      const ordered = [...found].sort((a, b) => rank(a) - rank(b));
+      await update((current) => ordered.reduce((map, entry) => restoreTrashEntry(map, entry, Date.now()), current));
+      await updateTrash((entries) => {
+        const next = entries.filter((e) => !wanted.has(e.id));
+        return next.length === entries.length ? entries : next;
+      });
       return true;
     },
     [update],
+  );
+
+  const restoreFromTrash = useCallback(
+    (entryId: string): Promise<boolean> => restoreManyFromTrash([entryId]),
+    [restoreManyFromTrash],
   );
 
   const deleteFromTrash = useCallback(async (entryId: string): Promise<void> => {
@@ -428,6 +445,51 @@ export function useWorkspaces() {
         return { ...current, [fromFolderId]: nextSource, [toFolderId]: nextTarget };
       });
       return { status };
+    },
+    [update],
+  );
+
+  /** Seçili sekme ve klasörleri tek yazmada başka bir klasöre taşır (sekmeler için copy: kopyala). */
+  const moveItems = useCallback(
+    async (fromFolderId: string | null, tabIds: string[], folderIds: string[], toFolderId: string | null, copy: boolean) => {
+      let result: Omit<ReturnType<typeof moveItemsOp>, 'map'> = {
+        movedTabs: 0,
+        movedFolders: 0,
+        duplicateTabs: 0,
+        skippedFolders: 0,
+      };
+      await update((current) => {
+        const { map, ...counts } = moveItemsOp(current, fromFolderId, tabIds, folderIds, toFolderId, copy, Date.now());
+        result = counts;
+        return map;
+      });
+      if (result.movedTabs > 0 && toFolderId !== null) rememberLastFolder(toFolderId);
+      return result;
+    },
+    [update],
+  );
+
+  /**
+   * Seçili sekme ve klasörleri tek yazmada çöp kutusuna taşır; "Geri al" için kayıt kimliklerini döndürür.
+   * Çöp kutusuna yazılamazsa kaldırılanlar geri konur.
+   */
+  const removeItems = useCallback(
+    async (parentFolderId: string | null, tabIds: string[], folderIds: string[]): Promise<string[]> => {
+      let entries: TrashEntry[] = [];
+      const now = Date.now();
+      await update((current) => {
+        const result = removeItemsOp(current, parentFolderId, tabIds, folderIds, now);
+        entries = result.entries;
+        return result.map;
+      });
+      if (entries.length === 0) return [];
+      try {
+        await updateTrash((list) => entries.reduce((acc, entry) => pushTrash(acc, entry, now), list));
+      } catch (e) {
+        await update((current) => entries.reduce((map, entry) => restoreTrashEntry(map, entry, Date.now()), current));
+        throw new Error('Seçilenler çöp kutusuna taşınamadı, kaldırılmadı.', { cause: e });
+      }
+      return entries.map((e) => e.id);
     },
     [update],
   );
@@ -612,6 +674,7 @@ export function useWorkspaces() {
     removeFolder,
     trash,
     restoreFromTrash,
+    restoreManyFromTrash,
     deleteFromTrash,
     emptyTrash,
     moveFolder,
@@ -621,6 +684,8 @@ export function useWorkspaces() {
     applyLayout,
     addOpenTab,
     moveTab,
+    moveItems,
+    removeItems,
     setTabPosition,
     removeTab,
     importWorkspaces,

@@ -57,6 +57,7 @@ export default function FullApp() {
     removeFolder,
     trash,
     restoreFromTrash,
+    restoreManyFromTrash,
     deleteFromTrash,
     emptyTrash,
     moveFolder,
@@ -66,6 +67,8 @@ export default function FullApp() {
     applyLayout,
     addOpenTab,
     moveTab,
+    moveItems,
+    removeItems,
     setTabPosition,
     removeTab,
     importWorkspaces,
@@ -320,6 +323,48 @@ export default function FullApp() {
       });
     },
     [workspaces, run, setFavorite, showToast],
+  );
+
+  // ---- Tuvalde çoklu seçim: toplu taşıma, silme ve konum ------------------------------
+  const handleMoveItems = useCallback(
+    (tabIds: string[], folderIds: string[], toFolderId: string | null, copy: boolean) => {
+      void run('move-items', async () => {
+        const r = await moveItems(currentId, tabIds, folderIds, toFolderId, copy);
+        const moved = r.movedTabs + r.movedFolders;
+        const target = toFolderId === null ? 'köke' : `“${nameOf(toFolderId)}” klasörüne`;
+        const notes: string[] = [];
+        if (r.duplicateTabs > 0) notes.push(`${r.duplicateTabs} sekme hedefte zaten vardı`);
+        if (r.skippedFolders > 0) notes.push(`${r.skippedFolders} klasör taşınamadı`);
+        const verb = copy && r.movedFolders === 0 ? 'kopyalandı' : 'taşındı';
+        showToast(
+          moved === 0
+            ? `Hiçbir öğe taşınmadı${notes.length > 0 ? ` (${notes.join(', ')})` : ''}.`
+            : `${moved} öğe ${target} ${verb}${notes.length > 0 ? ` (${notes.join(', ')})` : ''}.`,
+        );
+        if (moved > 0 && toFolderId !== null) emitFolderBurst(toFolderId);
+      });
+    },
+    [run, moveItems, currentId, nameOf, showToast],
+  );
+
+  const handleDeleteItems = useCallback(
+    (tabIds: string[], folderIds: string[]) => {
+      void run('delete-items', async () => {
+        const trashIds = await removeItems(currentId, tabIds, folderIds);
+        if (trashIds.length === 0) return;
+        if (folderIds.some((id) => getPath(workspaces, currentId).some((w) => w.id === id))) setSelectedFolder(null);
+        showToast(`${tabIds.length + folderIds.length} öğe çöp kutusuna taşındı.`, {
+          label: 'Geri al',
+          run: () => void run('undo-delete-items', () => restoreManyFromTrash(trashIds)),
+        });
+      });
+    },
+    [run, removeItems, restoreManyFromTrash, currentId, workspaces, setSelectedFolder, showToast],
+  );
+
+  const handleSetPositions = useCallback(
+    (positions: Record<string, Point>) => runQuiet(() => applyLayout(currentId, positions)),
+    [runQuiet, applyLayout, currentId],
   );
 
   const handleSetTabPosition = useCallback(
@@ -784,6 +829,9 @@ export default function FullApp() {
                 onNewSubfolder={(parentId) => setComposer({ mode: 'empty', parentId })}
                 onDropOpenTab={handleDropOpenTab}
                 onArrange={handleArrange}
+                onMoveItems={handleMoveItems}
+                onDeleteItems={handleDeleteItems}
+                onSetPositions={handleSetPositions}
               />
             )}
           </div>

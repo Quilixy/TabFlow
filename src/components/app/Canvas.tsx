@@ -48,10 +48,25 @@ import { FolderCard } from './FolderCard';
 import { TabCard } from './TabCard';
 
 type ItemKind = 'tab' | 'folder';
+type CanvasItem = LayoutItem & { kind: ItemKind };
 
-interface DragSession {
+/** Seçim anahtarı: "t:<sekme>" ya da "f:<klasör>" (sekme ve klasör kimlikleri çakışmasın). */
+type ItemKey = `${'t' | 'f'}:${string}`;
+const keyOf = (kind: ItemKind, id: string): ItemKey => `${kind === 'tab' ? 't' : 'f'}:${id}`;
+const NO_SELECTION: ReadonlySet<ItemKey> = new Set();
+
+interface DragMember {
   kind: ItemKind;
   id: string;
+  origX: number;
+  origY: number;
+}
+
+interface DragSession {
+  /** Sürüklenen (tutulan) kart; grup sürüklemede diğerleri ona göre kayar. */
+  lead: DragMember;
+  /** Birlikte sürüklenenler (lead dahil). */
+  members: DragMember[];
   startX: number;
   startY: number;
   /** İmlecin kartın sol üst köşesine göre dünya koordinatındaki uzaklığı (sürüklerken kaydırma/yakınlaştırma olsa da kart imleçte kalır). */
@@ -61,15 +76,23 @@ interface DragSession {
 }
 
 interface DragVisual {
-  kind: ItemKind;
-  id: string;
-  x: number;
-  y: number;
+  /** Sürüklenen kartların anlık konumları. */
+  positions: Record<string, Point>;
   /**
    * Sürükleme başladığı andaki yerleşim. Sürükleme boyunca diğer kartlar bu sabit yerleşimde kalır;
    * aksi halde sürüklenen kart ayrılınca onun yüzünden itilmiş kartlar yukarı "zıplar".
    */
   layout: Record<string, Point>;
+}
+
+/** Shift + boş alanda sürükleme ile çizilen seçim dikdörtgeni (dünya koordinatı). */
+interface Marquee {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  /** Başladığında zaten seçili olanlar (dikdörtgen bunlara eklenir). */
+  base: ReadonlySet<ItemKey>;
 }
 
 type DropResolution = { type: 'folder'; id: string | null } | { type: 'position' } | { type: 'cancel' };
@@ -105,12 +128,18 @@ interface CanvasProps {
   onNewSubfolder: (parentId: string | null) => void;
   onDropOpenTab: (folderId: string | null, tab: OpenTab, closeOriginal: boolean, position?: Point) => void;
   onArrange: (positions: Record<string, Point>) => void;
+  /** Çoklu seçim: seçili sekme ve klasörleri bir klasöre taşı (sekmeler için copy: kopyala). */
+  onMoveItems: (tabIds: string[], folderIds: string[], toFolderId: string | null, copy: boolean) => void;
+  onDeleteItems: (tabIds: string[], folderIds: string[]) => void;
+  /** Birden çok kartın konumunu tek yazmada kaydeder (grup sürükleme). */
+  onSetPositions: (positions: Record<string, Point>) => Promise<unknown>;
 }
 
-function findDropTarget(clientX: number, clientY: number, skipId: string): string | null {
+/** İmlecin altındaki bırakma hedefi (klasör kartı ya da ağaç satırı); sürüklenen klasörlerin kendileri atlanır. */
+function findDropTarget(clientX: number, clientY: number, skipIds: ReadonlySet<string>): string | null {
   for (const el of document.elementsFromPoint(clientX, clientY)) {
     const id = el.closest('[data-drop-folder]')?.getAttribute('data-drop-folder');
-    if (id && id !== skipId) return id;
+    if (id && !skipIds.has(id)) return id;
   }
   return null;
 }
@@ -137,11 +166,15 @@ export function Canvas({
   onNewSubfolder,
   onDropOpenTab,
   onArrange,
+  onMoveItems,
+  onDeleteItems,
+  onSetPositions,
 }: CanvasProps) {
   const memoryKey = folderId ?? ROOT_KEY;
   const [view, setView] = useState<View>(() => viewMemory.get(memoryKey) ?? DEFAULT_VIEW);
   const [drag, setDrag] = useState<DragVisual | null>(null);
-  const [selected, setSelected] = useState<{ kind: ItemKind; id: string } | null>(null);
+  const [selection, setSelection] = useState<ReadonlySet<ItemKey>>(NO_SELECTION);
+  const [marquee, setMarquee] = useState<Marquee | null>(null);
   const [isPanning, setIsPanning] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -204,16 +237,17 @@ export function Canvas({
     return new Map(childFolders.map((c) => [c.id, buildFolderPreview(index, workspaces, c.id, options)] as const));
   }, [childFolders, index, workspaces, deepPreview]);
 
-  const layoutItems = useMemo<LayoutItem[]>(
+  const layoutItems = useMemo<CanvasItem[]>(
     () => [
       ...childFolders.map((c) => ({
+        kind: 'folder' as const,
         id: c.id,
         x: c.x,
         y: c.y,
         w: FOLDER_CARD_W,
         h: estimateFolderCardHeight(previews.get(c.id) ?? NO_ROWS, c.name),
       })),
-      ...tabs.map((t) => ({ id: t.id, x: t.x, y: t.y, w: TAB_CARD_W, h: TAB_CARD_H })),
+      ...tabs.map((t) => ({ kind: 'tab' as const, id: t.id, x: t.x, y: t.y, w: TAB_CARD_W, h: TAB_CARD_H })),
     ],
     [childFolders, tabs, previews],
   );
@@ -259,12 +293,25 @@ export function Canvas({
     e.preventDefault(); // Orta tuş otomatik kaydırmasını ve metin seçimini engelle
     containerRef.current?.focus();
     e.currentTarget.setPointerCapture(e.pointerId);
+    // Shift (ya da Ctrl/⌘) + sürükle: alan seçimi; aksi halde tuvali kaydır.
+    if (e.button === 0 && (e.shiftKey || e.ctrlKey || e.metaKey)) {
+      const start = worldAt(e.clientX, e.clientY);
+      setMarquee({ x0: start.x, y0: start.y, x1: start.x, y1: start.y, base: selection });
+      return;
+    }
     panRef.current = { startX: e.clientX, startY: e.clientY, origX: viewRef.current.x, origY: viewRef.current.y };
     setIsPanning(true);
-    setSelected(null);
+    setSelection(NO_SELECTION);
   };
 
   const handleBackgroundPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (marquee) {
+      const at = worldAt(e.clientX, e.clientY);
+      const next = { ...marquee, x1: at.x, y1: at.y };
+      setMarquee(next);
+      setSelection(itemsInMarquee(next));
+      return;
+    }
     const pan = panRef.current;
     if (!pan) return;
     const x = pan.origX + (e.clientX - pan.startX);
@@ -275,6 +322,35 @@ export function Canvas({
   const endPan = () => {
     panRef.current = null;
     setIsPanning(false);
+    setMarquee(null);
+  };
+
+  /** Dikdörtgene değen kartlar (+ başlangıçta seçili olanlar). */
+  const itemsInMarquee = (m: Marquee): ReadonlySet<ItemKey> => {
+    const left = Math.min(m.x0, m.x1);
+    const right = Math.max(m.x0, m.x1);
+    const top = Math.min(m.y0, m.y1);
+    const bottom = Math.max(m.y0, m.y1);
+    const next = new Set(m.base);
+    layoutItems.forEach((item, i) => {
+      const r = rects[i];
+      if (r.x < right && r.x + r.w > left && r.y < bottom && r.y + r.h > top) {
+        next.add(keyOf(item.kind, item.id));
+      }
+    });
+    return next;
+  };
+
+  /** Seçimdeki sekme ve klasör kimlikleri (artık var olmayanlar atılır). */
+  const selectedIds = (keys: ReadonlySet<ItemKey> = selection) => {
+    const tabIds: string[] = [];
+    const folderIds: string[] = [];
+    for (const key of keys) {
+      const id = key.slice(2);
+      if (key.startsWith('t:') && tabs.some((t) => t.id === id)) tabIds.push(id);
+      if (key.startsWith('f:') && childFolders.some((f) => f.id === id)) folderIds.push(id);
+    }
+    return { tabIds, folderIds };
   };
 
   // ---- Öğe sürükleme (sekme / klasör kartı) ------------------------------------
@@ -287,14 +363,16 @@ export function Canvas({
       clientY >= rect.top &&
       clientY <= rect.bottom;
 
-    const raw = findDropTarget(clientX, clientY, session.kind === 'folder' ? session.id : '');
+    const dragged = new Set(session.members.filter((m) => m.kind === 'folder').map((m) => m.id));
+    const raw = findDropTarget(clientX, clientY, dragged);
     if (raw !== null) {
-      if (session.kind === 'tab') {
-        // Sekme köke ya da bulunduğu klasörün kendisine bırakılamaz.
-        return raw === ROOT_DROP_ID || raw === folderId ? { type: 'cancel' } : { type: 'folder', id: raw };
-      }
       const target = raw === ROOT_DROP_ID ? null : raw;
-      if (target === folderId || !canReparent(workspaces, session.id, target)) return { type: 'cancel' };
+      if (target === folderId) return { type: 'cancel' };
+      // Sekme köke bırakılamaz; klasör kendi alt klasörüne taşınamaz.
+      if (target === null && session.members.some((m) => m.kind === 'tab')) return { type: 'cancel' };
+      if (session.members.some((m) => m.kind === 'folder' && !canReparent(workspaces, m.id, target))) {
+        return { type: 'cancel' };
+      }
       return { type: 'folder', id: target };
     }
     return inside ? { type: 'position' } : { type: 'cancel' };
@@ -315,19 +393,59 @@ export function Canvas({
   const startItemDrag = (e: PointerEvent<HTMLDivElement>, kind: ItemKind, id: string, x: number, y: number) => {
     if (e.button !== 0) return; // Orta tuş: arka plan gibi kaydırır (olay yukarı çıkar)
     e.stopPropagation();
-    setSelected({ kind, id });
+    const key = keyOf(kind, id);
+    // Ctrl/⌘/Shift + tık: seçime ekle/çıkar (sürükleme başlamaz).
+    if (e.ctrlKey || e.metaKey || e.shiftKey) {
+      setSelection((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        return next;
+      });
+      return;
+    }
+    // Seçili bir karta basmak seçimi korur (hepsi birlikte sürüklenir); seçili olmayana basmak yalnızca onu seçer.
+    const group = selection.has(key) ? selection : new Set([key]);
+    if (!selection.has(key)) setSelection(group);
     if (disabled || (e.target as HTMLElement).closest('[data-no-drag]')) return;
     e.currentTarget.setPointerCapture(e.pointerId);
+
+    const layout = drag?.layout ?? resolved;
+    const members: DragMember[] = [];
+    for (const k of group) {
+      const memberKind: ItemKind = k.startsWith('t:') ? 'tab' : 'folder';
+      const memberId = k.slice(2);
+      const item = layoutItems.find((it) => it.id === memberId && it.kind === memberKind);
+      if (!item) continue;
+      const pos = layout[memberId] ?? { x: item.x, y: item.y };
+      members.push({ kind: memberKind, id: memberId, origX: pos.x, origY: pos.y });
+    }
+    const lead = members.find((m) => m.id === id && m.kind === kind) ?? { kind, id, origX: x, origY: y };
+    if (!members.includes(lead)) members.push(lead);
+
     const grab = worldAt(e.clientX, e.clientY);
     sessionRef.current = {
-      kind,
-      id,
+      lead,
+      members,
       startX: e.clientX,
       startY: e.clientY,
-      grabX: grab.x - x,
-      grabY: grab.y - y,
+      grabX: grab.x - lead.origX,
+      grabY: grab.y - lead.origY,
       moved: false,
     };
+  };
+
+  /** Öncü kartın yeni konumuna göre tüm grubun konumları. */
+  const groupPositions = (session: DragSession, leadX: number, leadY: number, round = false): Record<string, Point> => {
+    const dx = leadX - session.lead.origX;
+    const dy = leadY - session.lead.origY;
+    const out: Record<string, Point> = {};
+    for (const m of session.members) {
+      const x = m.origX + dx;
+      const y = m.origY + dy;
+      out[m.id] = round ? { x: Math.round(x), y: Math.round(y) } : { x, y };
+    }
+    return out;
   };
 
   const moveItemDrag = useEventCallback((e: PointerEvent<HTMLDivElement>) => {
@@ -344,14 +462,9 @@ export function Canvas({
     session.moved = true;
 
     const world = worldAt(e.clientX, e.clientY);
-    const x = world.x - session.grabX;
-    const y = world.y - session.grabY;
-    // İlk harekette yerleşimi dondur; sonrakilerde yalnızca konumu güncelle (diğer kartların prop'ları değişmez).
-    setDrag((prev) =>
-      prev && prev.id === session.id
-        ? { ...prev, x, y }
-        : { kind: session.kind, id: session.id, x, y, layout: resolved },
-    );
+    const positions = groupPositions(session, world.x - session.grabX, world.y - session.grabY);
+    // İlk harekette yerleşimi dondur; sonrakilerde yalnızca konumları güncelle (diğer kartların prop'ları değişmez).
+    setDrag((prev) => ({ positions, layout: prev?.layout ?? resolved }));
 
     const res = resolveDrop(session, e.clientX, e.clientY);
     setDropHover(res.type === 'folder' ? (res.id ?? ROOT_DROP_ID) : null);
@@ -363,12 +476,17 @@ export function Canvas({
     setDropHover(null);
     if (!session || !session.moved) {
       setDrag(null);
+      // Gruptaki bir karta sürüklemeden tıklamak seçimi yalnızca o karta indirir.
+      if (session && session.members.length > 1) setSelection(new Set([keyOf(session.lead.kind, session.lead.id)]));
       return;
     }
 
     const world = worldAt(e.clientX, e.clientY);
     const x = Math.round(world.x - session.grabX);
     const y = Math.round(world.y - session.grabY);
+    const positions = groupPositions(session, x, y, true);
+    const isGroup = session.members.length > 1;
+    const { lead } = session;
     const res = e.type === 'pointercancel' ? ({ type: 'cancel' } as const) : resolveDrop(session, e.clientX, e.clientY);
 
     // Depo güncellenene kadar kart bıraktığın yerde kalır (geri sıçrama olmaz).
@@ -379,19 +497,25 @@ export function Canvas({
     if (res.type === 'cancel') {
       setDrag(null);
     } else if (res.type === 'position') {
-      setDrag((prev) => ({ kind: session.kind, id: session.id, x, y, layout: prev?.layout ?? resolved }));
-      if (session.kind === 'tab') {
-        if (folderId !== null) settle(onSetTabPosition(folderId, session.id, x, y));
+      setDrag((prev) => ({ positions, layout: prev?.layout ?? resolved }));
+      if (isGroup) settle(onSetPositions(positions));
+      else if (lead.kind === 'tab') {
+        if (folderId !== null) settle(onSetTabPosition(folderId, lead.id, x, y));
       } else {
-        settle(onSetFolderPosition(session.id, x, y));
+        settle(onSetFolderPosition(lead.id, x, y));
       }
     } else {
       // Bir klasöre bırakıldı: eylem App'te (toast + hata yönetimi) yürür.
       setDrag(null);
-      if (session.kind === 'tab') {
-        if (folderId !== null && res.id !== null) onMoveTab(folderId, session.id, res.id, e.altKey);
+      if (isGroup) {
+        const tabIds = session.members.filter((m) => m.kind === 'tab').map((m) => m.id);
+        const folderIds = session.members.filter((m) => m.kind === 'folder').map((m) => m.id);
+        onMoveItems(tabIds, folderIds, res.id, e.altKey);
+        setSelection(NO_SELECTION);
+      } else if (lead.kind === 'tab') {
+        if (folderId !== null && res.id !== null) onMoveTab(folderId, lead.id, res.id, e.altKey);
       } else {
-        onMoveFolder(session.id, res.id);
+        onMoveFolder(lead.id, res.id);
       }
     }
   });
@@ -484,6 +608,54 @@ export function Canvas({
     return entries;
   };
 
+  /** Birden çok öğe seçiliyken sağ tık menüsü: toplu taşı/kopyala/sil. */
+  const selectionMenu = (): MenuEntry[] => {
+    const { tabIds, folderIds } = selectedIds();
+    const count = tabIds.length + folderIds.length;
+    const excluded = new Set([folderId, ...folderIds]);
+    const targets = moveTargets.filter((f) => !excluded.has(f.id));
+    const entries: MenuEntry[] = [{ type: 'heading', label: `${count} öğe seçili` }];
+    if (targets.length > 0) {
+      entries.push(
+        { type: 'heading', label: 'Klasöre taşı' },
+        ...folderTargets(targets, (f) => {
+          onMoveItems(tabIds, folderIds, f.id, false);
+          setSelection(NO_SELECTION);
+        }).map((entry) => ({ ...entry, disabled })),
+      );
+      if (tabIds.length > 0 && folderIds.length === 0) {
+        entries.push(
+          { type: 'heading', label: 'Klasöre kopyala' },
+          ...folderTargets(targets, (f) => onMoveItems(tabIds, [], f.id, true)).map((entry) => ({ ...entry, disabled })),
+        );
+      }
+    }
+    if (folderId !== null && folderIds.length > 0) {
+      entries.push({
+        label: 'Klasörleri köke taşı',
+        onSelect: () => {
+          onMoveItems([], folderIds, null, false);
+          setSelection(NO_SELECTION);
+        },
+        disabled,
+      });
+    }
+    entries.push(
+      { type: 'separator' },
+      { label: 'Seçimi kaldır', onSelect: () => setSelection(NO_SELECTION) },
+      {
+        label: `Seçilenleri sil (${count})`,
+        onSelect: () => {
+          onDeleteItems(tabIds, folderIds);
+          setSelection(NO_SELECTION);
+        },
+        danger: true,
+        disabled,
+      },
+    );
+    return entries;
+  };
+
   // Kartlara verilen tüm geri çağrılar kimlik tabanlı ve kararlı (useEventCallback): kartlar memo ile
   // sarılı olduğundan, kaydırma/yakınlaştırma/sürükleme sırasında diğer kartlar yeniden çizilmez.
   const onFolderPointerDown = useEventCallback((e: PointerEvent<HTMLDivElement>, id: string, x: number, y: number) =>
@@ -498,7 +670,11 @@ export function Canvas({
     if (!tab) return;
     e.preventDefault();
     e.stopPropagation();
-    setSelected({ kind: 'tab', id });
+    if (selection.size > 1 && selection.has(keyOf('tab', id))) {
+      openAt(e.clientX, e.clientY, selectionMenu());
+      return;
+    }
+    setSelection(new Set([keyOf('tab', id)]));
     openAt(e.clientX, e.clientY, tabMenu(tab));
   });
 
@@ -507,7 +683,11 @@ export function Canvas({
     if (!target) return;
     e.preventDefault();
     e.stopPropagation();
-    setSelected({ kind: 'folder', id });
+    if (selection.size > 1 && selection.has(keyOf('folder', id))) {
+      openAt(e.clientX, e.clientY, selectionMenu());
+      return;
+    }
+    setSelection(new Set([keyOf('folder', id)]));
     openAt(e.clientX, e.clientY, folderMenu(target, { x: e.clientX, y: e.clientY }));
   });
 
@@ -525,7 +705,8 @@ export function Canvas({
       e.preventDefault();
       onOpenTab(tab);
     }
-    if ((e.key === 'Delete' || e.key === 'Backspace') && folderId !== null && !disabled) {
+    // Çoklu seçimde silme tuvalin kendi dinleyicisinde (hepsi birlikte) yapılır.
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selection.size <= 1 && folderId !== null && !disabled) {
       e.preventDefault();
       // Kart kaldırılınca odak <body>'ye düşmesin: tuvalde kalsın.
       containerRef.current?.focus({ preventScroll: true });
@@ -564,7 +745,26 @@ export function Canvas({
   });
 
   const handleContainerKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Escape' && sessionRef.current) cancelItemDrag();
+    const target = e.target as HTMLElement;
+    if (target.closest('input, textarea, [contenteditable="true"], [role="menu"]')) return;
+    if (e.key === 'Escape') {
+      if (sessionRef.current) cancelItemDrag();
+      else setSelection(NO_SELECTION);
+      return;
+    }
+    // Ctrl/⌘ + A: bu tuvaldeki her şeyi seç.
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+      e.preventDefault();
+      setSelection(new Set(layoutItems.map((item) => keyOf(item.kind, item.id))));
+      return;
+    }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selection.size > 1 && !disabled) {
+      e.preventDefault();
+      const { tabIds, folderIds } = selectedIds();
+      containerRef.current?.focus({ preventScroll: true });
+      onDeleteItems(tabIds, folderIds);
+      setSelection(NO_SELECTION);
+    }
   };
 
   // ---- Yakınlaştırma düğmeleri -------------------------------------------------
@@ -576,7 +776,8 @@ export function Canvas({
 
   // Sürüklenen kart imleçte; diğerleri sürükleme başındaki sabit yerleşimde; sürükleme yoksa güncel yerleşimde.
   const posOf = (id: string, x: number, y: number): Point => {
-    if (drag && drag.id === id) return { x: drag.x, y: drag.y };
+    const dragged = drag?.positions[id];
+    if (dragged) return dragged;
     return (drag?.layout ?? resolved)[id] ?? { x, y };
   };
 
@@ -623,8 +824,8 @@ export function Canvas({
               rows={previews.get(child.id) ?? NO_ROWS}
               x={pos.x}
               y={pos.y}
-              isDragging={drag?.id === child.id}
-              isSelected={selected?.kind === 'folder' && selected.id === child.id}
+              isDragging={drag?.positions[child.id] !== undefined}
+              isSelected={selection.has(keyOf('folder', child.id))}
               isDropTarget={dropHoverId === child.id}
               isRenaming={renamingId === child.id && renamingSource === 'canvas'}
               isEntering={enterIds[child.id] === true}
@@ -652,8 +853,8 @@ export function Canvas({
               tab={tab}
               x={pos.x}
               y={pos.y}
-              isDragging={drag?.id === tab.id}
-              isSelected={selected?.kind === 'tab' && selected.id === tab.id}
+              isDragging={drag?.positions[tab.id] !== undefined}
+              isSelected={selection.has(keyOf('tab', tab.id))}
               onPointerDown={onTabPointerDown}
               onPointerMove={moveItemDrag}
               onPointerUp={endItemDrag}
@@ -665,7 +866,40 @@ export function Canvas({
             />
           );
         })}
+        {marquee && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute rounded-sm border border-indigo-500 bg-indigo-500/10"
+            style={{
+              left: Math.min(marquee.x0, marquee.x1),
+              top: Math.min(marquee.y0, marquee.y1),
+              width: Math.abs(marquee.x1 - marquee.x0),
+              height: Math.abs(marquee.y1 - marquee.y0),
+            }}
+          />
+        )}
       </div>
+
+      {selection.size > 1 && (
+        <div
+          data-no-drag
+          onPointerDown={(e) => e.stopPropagation()}
+          className="absolute top-3 left-3 flex items-center gap-2 rounded-lg border border-gray-200 bg-white py-1 pr-1 pl-3 text-xs text-gray-700 shadow-sm"
+          role="status"
+        >
+          <span>
+            <strong className="font-semibold text-gray-900">{selection.size}</strong> öğe seçili · sürükle, sağ tıkla ya da
+            Delete
+          </span>
+          <button
+            type="button"
+            onClick={() => setSelection(NO_SELECTION)}
+            className="rounded px-2 py-1 font-medium text-gray-600 hover:bg-gray-100"
+          >
+            Kaldır
+          </button>
+        </div>
+      )}
 
       {isEmpty && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">

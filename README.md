@@ -7,6 +7,10 @@ Sekmelerini klasörlere ve serbest bir tuvale kaydet, kapat ve saniyeler içinde
 - **Popup:** açık sekmelerin tümünü ya da yalnızca aktif sayfayı tek tıkla bir klasöre kaydet; klasörleri ara, iç içe klasörleri aç, sekmeleri tek tek ya da alt klasörleriyle birlikte geri aç.
 - **Tam ekran uygulama** (`Alt+Shift+T` ya da popup'taki "Tam ekranda aç"): solda klasör ağacı, ortada her klasörün kendi tuvali (sürükle-bırak, yakınlaştır, ızgaraya diz), sağda açık sekmeler.
 - İç içe klasörler, klasör rengi ve simgesi, tema paketleri (açık/koyu, vurgu rengi).
+- **Açma seçenekleri:** klasörü bu pencerede, alt klasörleriyle birlikte, klasörün adı ve renginde bir **sekme grubu** olarak ya da **yeni pencerede** aç.
+- **Sıralama ve sabitleme:** ağaçta bir klasörü başka bir satırın üst/alt kenarına sürükleyerek sırala (`Alt+↑/↓` da olur); "Üste sabitle" ile sık kullanılanları en üstte tut.
+- **Tuvalde çoklu seçim:** `Ctrl`/`Shift` + tık ile seç, `Shift` + boş alanda sürükleyerek alan seç, `Ctrl+A` ile tümünü seç. Seçilenleri birlikte sürükle, bir klasöre bırak, sağ tıkla taşı ya da `Delete` ile sil.
+- **Popup:** aktif sayfa kayıtlıysa hangi klasörlerde olduğunu gösterir; arama sonuçlarında ok tuşlarıyla gezilir (`↓` sonuçlara iner, `→`/`←` klasörü açar/kapatır).
 - Türkçe karakterlere duyarlı arama: "istanbul" → "İstanbul", "calisma" → "Çalışma".
 - Çok sayıda sekme açılırken ilk 10'u yüklenir, kalanlar tıklanınca yüklenir (RAM şişmez).
 - **Sağ tık menüsü:** bir sayfaya ya da bağlantıya sağ tıkla → *TabFlow'a kaydet* → klasör. Popup'ı açmadan kaydeder; simgedeki rozet sonucu gösterir (✓ kaydedildi, = zaten vardı, ! kaydedilemedi).
@@ -53,6 +57,7 @@ Değişiklikleri izleyerek derlemek için `npm run watch` kullan; ardından ekle
 | `storage`, `unlimitedStorage` | Klasörleri yerel olarak saklamak (çok sayıda sekmede kota dolmasın) |
 | `favicon` | Site simgelerini Chrome'un önbelleğinden göstermek |
 | `contextMenus` | Sayfa ve bağlantılarda "TabFlow'a kaydet" menüsü |
+| `tabGroups` | Klasörü adı ve rengiyle bir sekme grubu olarak açmak |
 
 Veriler yalnızca bu tarayıcıda (`chrome.storage.local`) tutulur; hiçbir sunucuya gönderilmez.
 
