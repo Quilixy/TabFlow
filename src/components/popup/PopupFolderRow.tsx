@@ -29,6 +29,8 @@ interface PopupFolderRowProps {
   /** Aramada: eşleşen sekmeler (varsa yalnızca onlar gösterilir). null: arama yok. */
   matchingTabs: SavedTab[] | null;
   justAdded: boolean;
+  /** Aktif sayfa bu klasörde zaten kayıtlı. */
+  hasActivePage: boolean;
   busy: boolean;
   onToggle: () => void;
   onAdd: () => void;
@@ -50,6 +52,7 @@ export function PopupFolderRow({
   isExpanded,
   matchingTabs,
   justAdded,
+  hasActivePage,
   busy,
   onToggle,
   onAdd,
@@ -73,7 +76,7 @@ export function PopupFolderRow({
   if (matchingTabs && matchingTabs.length > 0) meta.push(`${matchingTabs.length} eşleşme`);
 
   return (
-    <li className="relative">
+    <li className="relative" data-folder-row={workspace.id}>
       {/* Üst düzeylerin ağaç çizgileri */}
       {Array.from({ length: depth }, (_, level) => (
         <span
@@ -92,11 +95,13 @@ export function PopupFolderRow({
       >
         <button
           type="button"
+          data-nav="row"
           aria-expanded={isExpandable ? isExpanded : undefined}
-          onClick={onToggle}
-          disabled={!isExpandable}
+          // Boş klasörde açılacak bir şey yok ama satır klavyeyle gezilebilsin diye devre dışı bırakılmaz.
+          onClick={isExpandable ? onToggle : undefined}
+          aria-disabled={isExpandable ? undefined : true}
           title={isExpanded ? 'Sekmeleri gizle' : 'Sekmeleri göster'}
-          className="flex min-w-0 flex-1 items-center gap-1 rounded-md text-left focus-visible:outline-2 focus-visible:outline-indigo-600 disabled:cursor-default"
+          className="flex min-w-0 flex-1 items-center gap-1 rounded-md text-left focus-visible:outline-2 focus-visible:outline-indigo-600 aria-disabled:cursor-default"
         >
           <ChevronDownIcon
             width={14}
@@ -136,12 +141,24 @@ export function PopupFolderRow({
         </button>
 
         <IconButton
-          label={justAdded ? 'Eklendi' : `Aktif sayfayı “${workspace.name}” klasörüne ekle`}
+          label={
+            justAdded
+              ? 'Eklendi'
+              : hasActivePage
+                ? `Bu sayfa “${workspace.name}” klasöründe zaten var`
+                : `Aktif sayfayı “${workspace.name}” klasörüne ekle`
+          }
           onClick={onAdd}
           disabled={busy}
-          className={justAdded ? '' : 'opacity-60 group-hover:opacity-100 focus-visible:opacity-100'}
+          className={justAdded || hasActivePage ? '' : 'opacity-60 group-hover:opacity-100 focus-visible:opacity-100'}
         >
-          {justAdded ? <CheckIcon className="tf-check-pop text-emerald-600" strokeWidth={3} /> : <PlusIcon />}
+          {justAdded ? (
+            <CheckIcon className="tf-check-pop text-emerald-600" strokeWidth={3} />
+          ) : hasActivePage ? (
+            <CheckIcon className="text-emerald-600" strokeWidth={2.5} />
+          ) : (
+            <PlusIcon />
+          )}
         </IconButton>
         {/* Bölünmüş düğme: "Aç" varsayılanı yapar, ok tüm seçenekleri (grup, yeni pencere…) gösterir. */}
         <div className="flex shrink-0 items-center rounded-lg bg-gray-100">
@@ -182,6 +199,7 @@ export function PopupFolderRow({
               <li key={tab.id}>
                 <button
                   type="button"
+                  data-nav="tab"
                   onClick={() => onOpenTab(tab)}
                   disabled={busy}
                   title={`${tab.title}\n${tab.url}\nTıkla: arka planda aç`}
@@ -196,6 +214,7 @@ export function PopupFolderRow({
               <li>
                 <button
                   type="button"
+                  data-nav="tab"
                   onClick={onShowMore}
                   className="w-full rounded-md px-2 py-1 text-left text-xs font-medium text-indigo-700 hover:bg-gray-50"
                 >

@@ -1,8 +1,17 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type MouseEvent,
+} from 'react';
 import { FolderComposer, type ComposerMode } from '../components/FolderComposer';
 import { Button } from '../components/ui/Button';
 import { ErrorBanner } from '../components/ui/ErrorBanner';
-import { ExpandIcon, PlusIcon, SearchIcon } from '../components/ui/icons';
+import { CheckIcon, ExpandIcon, PlusIcon, SearchIcon } from '../components/ui/icons';
 import { PopupFolderRow } from '../components/popup/PopupFolderRow';
 import { Toast } from '../components/ui/Toast';
 import type { SavedTab, Workspace } from '../types';
@@ -16,7 +25,15 @@ import { formatSaveAllMessage } from '../utils/format';
 import { formatRestoreResult, type RestoreMode } from '../utils/restore';
 import { normalizeQuery, tabMatches } from '../utils/search';
 import { NAVIGATE_KEY } from '../utils/uiSync';
-import { buildChildrenIndex, collectSubtree, computeVisibleIds, countTabs, flattenTree } from '../utils/workspaceTree';
+import {
+  buildChildrenIndex,
+  collectSubtree,
+  computeVisibleIds,
+  countTabs,
+  flattenTree,
+  getPath,
+  pathLabel,
+} from '../utils/workspaceTree';
 
 const SAVE_ACTION = '__save__';
 const CREATE_ACTION = '__create__';
@@ -73,6 +90,104 @@ export default function PopupApp() {
     for (const row of treeRows) result.set(row.workspace.id, row.workspace.tabs.filter((t) => tabMatches(t, q)));
     return result;
   }, [treeRows, hasQuery, q]);
+
+  // Aktif sayfa hangi klasörlerde kayıtlı? (Popup her açılışta bir kez okur; kaydedilemeyen sayfada null.)
+  const [activeUrl, setActiveUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    queryActiveTab().then(
+      (tab) => {
+        if (!cancelled) setActiveUrl(tab.url);
+      },
+      () => undefined,
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const savedIn = useMemo(
+    () =>
+      activeUrl === null
+        ? []
+        : Object.values(workspaces)
+            .filter((w) => w.tabs.some((t) => t.url === activeUrl))
+            .map((w) => ({ id: w.id, label: pathLabel(workspaces, w.id) })),
+    [workspaces, activeUrl],
+  );
+  const savedInIds = useMemo(() => new Set(savedIn.map((s) => s.id)), [savedIn]);
+
+  // ---- Klavye: arama kutusu ↔ sonuç listesi ------------------------------------------------
+  const searchRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  /** Listedeki gezilebilir öğeler (klasör satırları ve sekmeler), ekrandaki sırayla. */
+  const navItems = () =>
+    Array.from(listRef.current?.querySelectorAll<HTMLButtonElement>('[data-nav]') ?? []).filter((el) => !el.disabled);
+
+  const focusNav = (el: HTMLElement | undefined) => {
+    el?.focus();
+    el?.scrollIntoView({ block: 'nearest' });
+  };
+
+  const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown' || (e.key === 'Enter' && query.trim() !== '')) {
+      e.preventDefault();
+      focusNav(navItems()[0]);
+    }
+  };
+
+  const handleListKeyDown = (e: KeyboardEvent<HTMLUListElement>) => {
+    const items = navItems();
+    const active = document.activeElement as HTMLButtonElement | null;
+    const at = active ? items.indexOf(active) : -1;
+    if (at === -1) return;
+    switch (e.key) {
+      case 'ArrowDown':
+        focusNav(items[Math.min(items.length - 1, at + 1)]);
+        break;
+      case 'ArrowUp':
+        if (at === 0) searchRef.current?.focus();
+        else focusNav(items[at - 1]);
+        break;
+      case 'Home':
+        focusNav(items[0]);
+        break;
+      case 'End':
+        focusNav(items[items.length - 1]);
+        break;
+      case 'ArrowRight':
+        // Kapalı klasörü aç (açıksa ilk sekmesine/alt klasörüne in).
+        if (active?.dataset.nav !== 'row') return;
+        if (active.getAttribute('aria-expanded') === 'false') active.click();
+        else if (active.getAttribute('aria-expanded') === 'true') focusNav(items[at + 1]);
+        break;
+      case 'ArrowLeft': {
+        // Açık klasörü kapat; sekmedeysen sekmenin klasörüne çık.
+        if (active?.dataset.nav === 'row') {
+          if (active.getAttribute('aria-expanded') === 'true') active.click();
+          return;
+        }
+        const row = active?.closest('[data-folder-row]')?.querySelector<HTMLElement>('[data-nav="row"]');
+        focusNav(row ?? undefined);
+        break;
+      }
+      default:
+        return;
+    }
+    e.preventDefault();
+  };
+
+  /** Klasörün üst dallarını açıp satırını görünür alana kaydırır. */
+  const revealFolder = (id: string) => {
+    if (hasQuery) setQuery('');
+    for (const ancestor of getPath(workspaces, id).slice(0, -1)) setPopupExpanded(ancestor.id, true);
+    requestAnimationFrame(() => {
+      const row = document.querySelector<HTMLElement>(`[data-folder-row="${CSS.escape(id)}"]`);
+      row?.scrollIntoView({ block: 'nearest' });
+      row?.querySelector<HTMLElement>('[data-nav="row"]')?.focus();
+    });
+  };
 
   useEffect(() => {
     const timers = timeoutRefs.current;
@@ -258,15 +373,38 @@ export default function PopupApp() {
       <div className="relative shrink-0">
         <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-gray-500" />
         <input
+          ref={searchRef}
           type="search"
           value={query}
           autoFocus={!composer}
+          onKeyDown={handleSearchKeyDown}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Klasör veya sekme ara…"
           aria-label="Klasör veya sekme ara"
           className="block w-full rounded-md border-0 bg-white py-2 pr-3 pl-8 text-sm text-gray-900 ring-1 ring-gray-300 ring-inset placeholder:text-gray-500 focus:ring-2 focus:ring-indigo-600"
         />
       </div>
+
+      {savedIn.length > 0 && (
+        <p className="flex shrink-0 items-start gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs text-gray-700">
+          <CheckIcon width={14} height={14} className="mt-px shrink-0 text-emerald-600" strokeWidth={2.5} />
+          <span className="min-w-0">
+            Bu sayfa zaten kayıtlı:{' '}
+            {savedIn.map((s, i) => (
+              <span key={s.id}>
+                {i > 0 && ', '}
+                <button
+                  type="button"
+                  onClick={() => revealFolder(s.id)}
+                  className="font-medium text-gray-900 underline decoration-gray-300 underline-offset-2 hover:decoration-gray-600"
+                >
+                  {s.label}
+                </button>
+              </span>
+            ))}
+          </span>
+        </p>
+      )}
 
       {bannerMessage && (
         <div className="shrink-0">
@@ -298,7 +436,12 @@ export default function PopupApp() {
             {hasQuery ? 'Eşleşen klasör yok.' : 'Henüz klasör yok. Aşağıdan oluştur.'}
           </p>
         ) : (
-          <ul className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-[var(--tf-card-border)] bg-white p-1 shadow-sm">
+          <ul
+            ref={listRef}
+            onKeyDown={handleListKeyDown}
+            aria-label="Klasörler (ok tuşlarıyla gezin)"
+            className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-[var(--tf-card-border)] bg-white p-1 shadow-sm"
+          >
             {treeRows.map((row) => {
               const { workspace } = row;
               return (
@@ -312,6 +455,7 @@ export default function PopupApp() {
                   isExpanded={isRowExpanded(workspace.id)}
                   matchingTabs={matchingTabs?.get(workspace.id) ?? null}
                   justAdded={!!justAddedIds[workspace.id]}
+                  hasActivePage={savedInIds.has(workspace.id)}
                   busy={isBusy}
                   onToggle={() => toggleRow(workspace.id)}
                   onAdd={() => handleAddActive(workspace.id, workspace.name)}
