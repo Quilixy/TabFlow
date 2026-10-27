@@ -11,6 +11,7 @@ import { Button } from '../components/ui/Button';
 import { ErrorBanner } from '../components/ui/ErrorBanner';
 import { TrashPanel } from '../components/TrashPanel';
 import { ArchiveIcon, ChevronDownIcon, ExternalLinkIcon, PlusIcon, TrashIcon } from '../components/ui/icons';
+import { restoreEntries } from '../components/ui/menu';
 import { Toast } from '../components/ui/Toast';
 import { useConfirm } from '../hooks/useConfirm';
 import { useContextMenu } from '../hooks/useContextMenu';
@@ -21,7 +22,8 @@ import { getErrorMessage, useUiStore, type RenameSource } from '../store/useUiSt
 import type { Point, SavedTab } from '../types';
 import { backupFileName, createBackup, MAX_BACKUP_BYTES, parseBackup, serializeBackup } from '../utils/backup';
 import { downloadTextFile } from '../utils/download';
-import { formatAgo, formatDateTime, formatRestoreMessage, formatSaveAllMessage } from '../utils/format';
+import { formatAgo, formatDateTime, formatSaveAllMessage } from '../utils/format';
+import { formatRestoreResult, type RestoreMode } from '../utils/restore';
 import type { Snapshot } from '../utils/snapshots';
 import type { DropPlacement } from '../utils/workspaceOps';
 import { LEAVE_ANIMATION_MS } from '../utils/theme';
@@ -439,7 +441,7 @@ export default function FullApp() {
   );
 
   const handleRestore = useCallback(
-    (id: string, recursive: boolean) => {
+    (id: string, recursive: boolean, mode: RestoreMode = 'tabs') => {
       const folder = workspaces[id];
       if (!folder) return;
       const folders = recursive ? collectSubtree(index, workspaces, id) : [folder];
@@ -449,13 +451,17 @@ export default function FullApp() {
         if (total > RESTORE_CONFIRM_THRESHOLD) {
           const ok = await confirm({
             title: `En fazla ${total} sekme açılacak`,
-            message: 'Bu pencerede zaten açık olanlar atlanır. Devam edilsin mi?',
+            message:
+              mode === 'window'
+                ? 'Hepsi yeni bir pencerede açılır. Devam edilsin mi?'
+                : 'Bu pencerede zaten açık olanlar atlanır. Devam edilsin mi?',
             confirmLabel: 'Sekmeleri aç',
           });
           if (!ok) return;
         }
-        // Tam ekran uygulamadan ayrılmamak için ilk sekmeye geçme.
-        showToast(formatRestoreMessage(await restoreFolder(id, recursive, false)));
+        // 'tabs' modunda tam ekran uygulamadan ayrılma; grup ve pencere ise doğrudan gösterilir.
+        const result = await restoreFolder(id, recursive, mode !== 'tabs', mode);
+        showToast(formatRestoreResult(result, folder.name));
       });
     },
     [workspaces, index, run, confirm, restoreFolder, showToast],
@@ -598,19 +604,14 @@ export default function FullApp() {
   const openCurrentFolderTabs = (e: MouseEvent<HTMLButtonElement>) => {
     if (!current) return;
     const subtreeTabs = countTabs(collectSubtree(index, workspaces, current.id));
-    if (subtreeTabs === current.tabs.length) {
-      handleRestore(current.id, false);
-      return;
-    }
-    if (current.tabs.length === 0) {
-      handleRestore(current.id, true);
-      return;
-    }
     const rect = e.currentTarget.getBoundingClientRect();
-    openRestoreMenuAt(rect.right - 220, rect.bottom + 4, [
-      { label: `Yalnızca bu klasör (${current.tabs.length} sekme)`, onSelect: () => handleRestore(current.id, false) },
-      { label: `Alt klasörlerle birlikte (${subtreeTabs} sekme)`, onSelect: () => handleRestore(current.id, true) },
-    ]);
+    openRestoreMenuAt(
+      rect.right - 230,
+      rect.bottom + 4,
+      restoreEntries(current.tabs.length, subtreeTabs, isBusy, (recursive, mode) =>
+        handleRestore(current.id, recursive, mode),
+      ),
+    );
   };
 
   const pendingAction = (id: string) => pendingActions.has(id);
@@ -726,13 +727,11 @@ export default function FullApp() {
                 size="sm"
                 onClick={openCurrentFolderTabs}
                 disabled={isBusy || currentSubtreeTabs === 0}
-                aria-haspopup={currentSubtreeTabs > current.tabs.length && current.tabs.length > 0 ? 'menu' : undefined}
+                aria-haspopup="menu"
               >
                 <ExternalLinkIcon />
                 Sekmeleri aç
-                {currentSubtreeTabs > current.tabs.length && current.tabs.length > 0 && (
-                  <ChevronDownIcon width={12} height={12} className="-mr-0.5 text-gray-500" />
-                )}
+                <ChevronDownIcon width={12} height={12} className="-mr-0.5 text-gray-500" />
               </Button>
             )}
             {restoreMenu}

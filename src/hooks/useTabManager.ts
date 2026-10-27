@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import type { PageInfo } from '../types';
+import type { TabGroupColor } from '../utils/restore';
 import { toOpenTab, type OpenTab } from '../utils/tabs';
 
 export { resolveRestorableUrl, toOpenTab, type OpenTab } from '../utils/tabs';
@@ -84,6 +85,39 @@ export async function queryActiveTab(): Promise<OpenTab> {
   return openTab;
 }
 
+/**
+ * Sekmeleri SIRAYLA ve arka planda (active: false) açar. Toplamda EAGER_TAB_LIMIT'ten sonrakiler ertelenir
+ * (discard edilir; tıklanınca yüklenir). Hata olursa bu çağrıda açılanları kapatır (yarım iş bırakmaz).
+ * `existing`: aynı işlemde daha önce açılmış sekmeler (ertelemenin sayımına girer, hatada onlar da kapanır).
+ */
+async function createTabsIn(
+  windowId: number,
+  tabs: PageInfo[],
+  existing: number[],
+): Promise<{ ids: number[]; deferred: number }> {
+  const ids = [...existing];
+  let deferred = 0;
+  try {
+    for (const tab of tabs) {
+      const created = await chrome.tabs.create({ windowId, url: tab.url, pinned: tab.pinned, active: false });
+      if (created.id === undefined) continue;
+      ids.push(created.id);
+      if (ids.length > EAGER_TAB_LIMIT) {
+        try {
+          await chrome.tabs.discard(created.id);
+          deferred++;
+        } catch {
+          // Bu sekme ertelenemedi (ör. çoktan yüklendi): normal yüklenmesine izin ver.
+        }
+      }
+    }
+    return { ids, deferred };
+  } catch (e) {
+    await Promise.allSettled(ids.map((id) => chrome.tabs.remove(id)));
+    throw e;
+  }
+}
+
 export function useTabManager() {
   // Hata çağırana fırlatılır ve arayüz tarafından gösterilir; burada ayrıca durum tutulmaz
   // (tutulsaydı kapatılan hata bandı aynı iletiyle geri gelirdi).
@@ -130,41 +164,36 @@ export function useTabManager() {
     [run],
   );
 
-  /**
-   * Sekmeleri SIRAYLA ve arka planda (active: false) açar. EAGER_TAB_LIMIT'ten sonrakiler ertelenir
-   * (discard edilir; tıklanınca yüklenir). Ertelenemeyen sekme sessizce normal yüklenir.
-   */
+  /** Sekmeleri bu pencerede açar (bkz. createTabsIn). */
   const openTabs = useCallback(
     (tabs: PageInfo[]) =>
-      run('Sekmeler açılamadı.', async (): Promise<{ ids: number[]; deferred: number }> => {
-        const windowId = await getCurrentWindowId();
-        const ids: number[] = [];
-        let deferred = 0;
-        try {
-          for (const tab of tabs) {
-            const created = await chrome.tabs.create({
-              windowId,
-              url: tab.url,
-              pinned: tab.pinned,
-              active: false,
-            });
-            if (created.id === undefined) continue;
-            ids.push(created.id);
+      run('Sekmeler açılamadı.', async () => createTabsIn(await getCurrentWindowId(), tabs, [])),
+    [run],
+  );
 
-            if (ids.length > EAGER_TAB_LIMIT) {
-              try {
-                await chrome.tabs.discard(created.id);
-                deferred++;
-              } catch {
-                // Bu sekme ertelenemedi (ör. çoktan yüklendi): normal yüklenmesine izin ver.
-              }
-            }
-          }
-          return { ids, deferred };
-        } catch (e) {
-          await Promise.allSettled(ids.map((id) => chrome.tabs.remove(id)));
-          throw e;
-        }
+  /** Sekmeleri yeni (öne gelen) bir pencerede açar; ilki pencereyle birlikte oluşur. */
+  const openTabsInNewWindow = useCallback(
+    (tabs: PageInfo[]) =>
+      run('Yeni pencere açılamadı.', async (): Promise<{ ids: number[]; deferred: number }> => {
+        const [first, ...rest] = tabs;
+        if (!first) return { ids: [], deferred: 0 };
+        const win = await chrome.windows.create({ url: first.url, focused: true });
+        const firstId = win?.tabs?.[0]?.id;
+        if (win?.id === undefined || firstId === undefined) throw new Error('Pencere oluşturulamadı.');
+        if (first.pinned) await chrome.tabs.update(firstId, { pinned: true });
+        return createTabsIn(win.id, rest, [firstId]);
+      }),
+    [run],
+  );
+
+  /** Sekmeleri adı ve rengi verilen bir sekme grubunda toplar (sabitlenmiş sekmeler gruplanamaz). */
+  const groupTabs = useCallback(
+    (tabIds: number[], title: string, color: TabGroupColor) =>
+      run('Sekme grubu oluşturulamadı.', async (): Promise<number | null> => {
+        if (tabIds.length === 0) return null;
+        const groupId = await chrome.tabs.group({ tabIds: tabIds as [number, ...number[]] });
+        await chrome.tabGroups.update(groupId, { title, color, collapsed: false });
+        return groupId;
       }),
     [run],
   );
@@ -193,7 +222,7 @@ export function useTabManager() {
   );
 
   return useMemo(
-    () => ({ getOpenTabs, closeTabs, openTabs, openSingleTab, activateTab }),
-    [getOpenTabs, closeTabs, openTabs, openSingleTab, activateTab],
+    () => ({ getOpenTabs, closeTabs, openTabs, openTabsInNewWindow, groupTabs, openSingleTab, activateTab }),
+    [getOpenTabs, closeTabs, openTabs, openTabsInNewWindow, groupTabs, openSingleTab, activateTab],
   );
 }

@@ -42,7 +42,8 @@ import {
 } from '../../utils/workspaceTree';
 import { ExpandIcon, GridIcon, ListIcon, MinusIcon, PlusIcon } from '../ui/icons';
 import { IconButton } from '../ui/IconButton';
-import { folderTargets, type MenuEntry } from '../ui/menu';
+import { folderTargets, restoreEntries, type MenuEntry } from '../ui/menu';
+import type { RestoreMode } from '../../utils/restore';
 import { FolderCard } from './FolderCard';
 import { TabCard } from './TabCard';
 
@@ -100,7 +101,7 @@ interface CanvasProps {
   onStyleFolder: (id: string, anchor: Point) => void;
   onDeleteFolder: (id: string) => void;
   onToggleFavorite: (id: string) => void;
-  onRestoreFolder: (id: string, recursive: boolean) => void;
+  onRestoreFolder: (id: string, recursive: boolean, mode: RestoreMode) => void;
   onNewSubfolder: (parentId: string | null) => void;
   onDropOpenTab: (folderId: string | null, tab: OpenTab, closeOriginal: boolean, position?: Point) => void;
   onArrange: (positions: Record<string, Point>) => void;
@@ -463,19 +464,10 @@ export function Canvas({
     const subtreeTabs = countTabs(collectSubtree(index, workspaces, target.id));
     const entries: MenuEntry[] = [
       { label: 'Klasöre git', onSelect: () => onEnterFolder(target.id) },
-      {
-        label: 'Sekmeleri aç',
-        onSelect: () => onRestoreFolder(target.id, false),
-        disabled: disabled || target.tabs.length === 0,
-      },
+      ...restoreEntries(target.tabs.length, subtreeTabs, disabled, (recursive, mode) =>
+        onRestoreFolder(target.id, recursive, mode),
+      ),
     ];
-    if (subtreeTabs > target.tabs.length) {
-      entries.push({
-        label: `Alt klasörlerle birlikte aç (${subtreeTabs})`,
-        onSelect: () => onRestoreFolder(target.id, true),
-        disabled,
-      });
-    }
     entries.push(
       { type: 'separator' },
       { label: 'Alt klasör ekle', onSelect: () => onNewSubfolder(target.id), disabled },

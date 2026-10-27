@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatAgo, formatRestoreMessage, formatSaveAllMessage } from './format';
+import { formatAgo, formatSaveAllMessage } from './format';
 
 describe('formatAgo', () => {
   const now = 1_000_000_000_000;
@@ -11,17 +11,6 @@ describe('formatAgo', () => {
   });
   it('gelecekteki zamanı "az önce" sayar', () => {
     expect(formatAgo(now + 5_000, now)).toBe('az önce');
-  });
-});
-describe('formatRestoreMessage', () => {
-  it('sonuca göre tek cümle üretir', () => {
-    expect(formatRestoreMessage({ opened: 0, skipped: 3 })).toBe('Tüm sekmeler zaten açık.');
-    expect(formatRestoreMessage({ opened: 4, skipped: 0 })).toBe('4 sekme açıldı.');
-    expect(formatRestoreMessage({ opened: 3, skipped: 2 })).toBe('3 sekme açıldı, 2 tanesi zaten açıktı.');
-    expect(formatRestoreMessage({ opened: 25, skipped: 0, deferred: 15 })).toBe('25 sekme açıldı (15 tanesi tıklanınca yüklenecek).');
-    expect(formatRestoreMessage({ opened: 25, skipped: 5, deferred: 15 })).toBe(
-      '25 sekme açıldı, 5 tanesi zaten açıktı (15 tanesi tıklanınca yüklenecek).',
-    );
   });
 });
 

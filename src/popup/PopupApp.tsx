@@ -8,10 +8,12 @@ import { Toast } from '../components/ui/Toast';
 import type { SavedTab, Workspace } from '../types';
 import { useConfirm } from '../hooks/useConfirm';
 import { useContextMenu } from '../hooks/useContextMenu';
+import { restoreEntries } from '../components/ui/menu';
 import { queryActiveTab } from '../hooks/useTabManager';
 import { useWorkspaces } from '../hooks/useWorkspaces';
 import { getErrorMessage, useUiStore } from '../store/useUiStore';
-import { formatRestoreMessage, formatSaveAllMessage } from '../utils/format';
+import { formatSaveAllMessage } from '../utils/format';
+import { formatRestoreResult, type RestoreMode } from '../utils/restore';
 import { normalizeQuery, tabMatches } from '../utils/search';
 import { NAVIGATE_KEY } from '../utils/uiSync';
 import { buildChildrenIndex, collectSubtree, computeVisibleIds, countTabs, flattenTree } from '../utils/workspaceTree';
@@ -162,17 +164,20 @@ export default function PopupApp() {
   );
 
   const handleRestore = useCallback(
-    (folderId: string, recursive: boolean, total: number) => {
-      void run(`restore:${folderId}`, async () => {
+    (folder: Workspace, recursive: boolean, total: number, mode: RestoreMode = 'tabs') => {
+      void run(`restore:${folder.id}`, async () => {
         if (total > RESTORE_CONFIRM_THRESHOLD) {
           const ok = await confirm({
             title: `En fazla ${total} sekme açılacak`,
-            message: 'Bu pencerede zaten açık olanlar atlanır. Devam edilsin mi?',
+            message:
+              mode === 'window'
+                ? 'Hepsi yeni bir pencerede açılır. Devam edilsin mi?'
+                : 'Bu pencerede zaten açık olanlar atlanır. Devam edilsin mi?',
             confirmLabel: 'Sekmeleri aç',
           });
           if (!ok) return;
         }
-        showToast(formatRestoreMessage(await restoreFolder(folderId, recursive, true)));
+        showToast(formatRestoreResult(await restoreFolder(folder.id, recursive, true, mode), folder.name));
       });
     },
     [run, confirm, restoreFolder, showToast],
@@ -186,30 +191,28 @@ export default function PopupApp() {
     return counts;
   }, [index, workspaces]);
 
-  // Alt klasörü olan bir klasörde "Aç": yalnızca kendisi mi, alt klasörlerle birlikte mi?
+  // "Aç": klasörün kendi sekmeleri; kendi sekmesi yoksa (yalnızca alt klasör tutuyorsa) alt klasörlerdekiler.
   const handleOpenClick = useCallback(
+    (folder: Workspace) => {
+      const subtreeTabs = subtreeTabCounts.get(folder.id) ?? folder.tabs.length;
+      if (folder.tabs.length > 0) handleRestore(folder, false, folder.tabs.length);
+      else handleRestore(folder, true, subtreeTabs);
+    },
+    [subtreeTabCounts, handleRestore],
+  );
+
+  // "Aç ▾": tüm açma seçenekleri (alt klasörlerle, sekme grubu, yeni pencere).
+  const handleOpenMenu = useCallback(
     (e: MouseEvent<HTMLButtonElement>, folder: Workspace) => {
       const subtreeTabs = subtreeTabCounts.get(folder.id) ?? folder.tabs.length;
-      if (subtreeTabs === folder.tabs.length) {
-        handleRestore(folder.id, false, subtreeTabs);
-        return;
-      }
-      // Kendi sekmesi olmayan (yalnızca alt klasör tutan) klasörde tek anlamlı seçenek var.
-      if (folder.tabs.length === 0) {
-        handleRestore(folder.id, true, subtreeTabs);
-        return;
-      }
       const rect = e.currentTarget.getBoundingClientRect();
-      openAt(rect.right - 200, rect.bottom + 4, [
-        {
-          label: `Yalnızca bu klasör (${folder.tabs.length} sekme)`,
-          onSelect: () => handleRestore(folder.id, false, folder.tabs.length),
-        },
-        {
-          label: `Alt klasörlerle birlikte (${subtreeTabs} sekme)`,
-          onSelect: () => handleRestore(folder.id, true, subtreeTabs),
-        },
-      ]);
+      openAt(
+        rect.right - 210,
+        rect.bottom + 4,
+        restoreEntries(folder.tabs.length, subtreeTabs, false, (recursive, mode) =>
+          handleRestore(folder, recursive, recursive ? subtreeTabs : folder.tabs.length, mode),
+        ),
+      );
     },
     [subtreeTabCounts, handleRestore, openAt],
   );
@@ -312,7 +315,8 @@ export default function PopupApp() {
                   busy={isBusy}
                   onToggle={() => toggleRow(workspace.id)}
                   onAdd={() => handleAddActive(workspace.id, workspace.name)}
-                  onOpenAll={(e) => handleOpenClick(e, workspace)}
+                  onOpenAll={() => handleOpenClick(workspace)}
+                  onOpenMenu={(e) => handleOpenMenu(e, workspace)}
                   onOpenTab={handleOpenSavedTab}
                   onShowMore={() => openFullApp(workspace.id)}
                 />

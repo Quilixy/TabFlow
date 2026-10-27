@@ -20,7 +20,8 @@ import { FolderGlyph } from '../ui/FolderGlyph';
 import { ChevronDownIcon, HomeIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon, XIcon } from '../ui/icons';
 import { IconButton } from '../ui/IconButton';
 import { InlineRename } from '../ui/InlineRename';
-import type { MenuEntry } from '../ui/menu';
+import { restoreEntries, type MenuEntry } from '../ui/menu';
+import type { RestoreMode } from '../../utils/restore';
 
 const ROW_HEIGHT = 32;
 const OVERSCAN = 8;
@@ -49,7 +50,7 @@ interface FolderTreeProps {
   onRenameCommit: (id: string, name: string) => void;
   onStyle: (id: string, anchor: Point) => void;
   onDelete: (id: string) => void;
-  onRestore: (id: string, recursive: boolean) => void;
+  onRestore: (id: string, recursive: boolean, mode: RestoreMode) => void;
   onDropOpenTab: (folderId: string, tab: OpenTab, closeOriginal: boolean) => void;
   onMoveFolder: (folderId: string, newParentId: string | null) => void;
   /** Klasörü bir kardeşinin önüne/arkasına taşır (elle sıralama). */
@@ -141,15 +142,11 @@ export function FolderTree({
     const subtreeTabs = countTabs(collectSubtree(index, workspaces, workspace.id));
     const entries: MenuEntry[] = [
       { label: 'Yeni alt klasör', onSelect: () => onNewFolder(workspace.id), disabled },
-      { label: 'Sekmeleri aç', onSelect: () => onRestore(workspace.id, false), disabled: disabled || workspace.tabs.length === 0 },
+      { type: 'separator' },
+      ...restoreEntries(workspace.tabs.length, subtreeTabs, disabled, (recursive, mode) =>
+        onRestore(workspace.id, recursive, mode),
+      ),
     ];
-    if (subtreeTabs > workspace.tabs.length) {
-      entries.push({
-        label: `Alt klasörlerle birlikte aç (${subtreeTabs})`,
-        onSelect: () => onRestore(workspace.id, true),
-        disabled,
-      });
-    }
     entries.push(
       { type: 'separator' },
       {

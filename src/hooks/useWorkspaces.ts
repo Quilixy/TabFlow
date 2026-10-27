@@ -3,9 +3,10 @@ import { readKey, updateKey, useStorage } from './useStorage';
 import { queryOpenTabs, useTabManager, type OpenTab } from './useTabManager';
 import { LAST_FOLDER_KEY, TRASH_KEY, WORKSPACES_KEY } from '../storage/keys';
 import { readSnapshots, takeSnapshot } from '../storage/snapshotStore';
-import type { PageInfo, Point, SavedTab, Workspace, WorkspaceMap } from '../types';
+import type { PageInfo, Point, Workspace, WorkspaceMap } from '../types';
 import { mergeWorkspaces, undoImport, type ImportUndo, type MergeStats } from '../utils/backup';
 import { isFolderColor, isFolderIcon } from '../utils/folderStyle';
+import { tabGroupColor, type RestoreMode, type RestoreResult } from '../utils/restore';
 import type { Snapshot } from '../utils/snapshots';
 import { normalizeTrash, pushTrash, removeTrashEntry, type TrashEntry } from '../utils/trash';
 import {
@@ -65,7 +66,8 @@ export interface SaveAndCloseResult {
 
 export function useWorkspaces() {
   const { data, isLoading, update: updateRaw, error } = useStorage<WorkspaceMap>(STORAGE_KEY, EMPTY);
-  const { getOpenTabs, closeTabs, openTabs, openSingleTab, activateTab } = useTabManager();
+  const { getOpenTabs, closeTabs, openTabs, openTabsInNewWindow, groupTabs, openSingleTab, activateTab } =
+    useTabManager();
   const { data: rawTrash } = useStorage<unknown>(TRASH_KEY, NO_TRASH);
   const trash = useMemo(() => normalizeTrash(rawTrash), [rawTrash]);
 
@@ -528,45 +530,54 @@ export function useWorkspaces() {
   // ---- Tarayıcı eylemleri ----------------------------------------------------
 
   /**
-   * Klasörün (isteğe bağlı alt klasörlerle) sekmelerini açar. Bu pencerede zaten açık URL'leri atlar.
-   * activate: ilk yeni sekmeye geç (tam ekran uygulamada genelde false).
+   * Klasörün (isteğe bağlı alt klasörlerle) sekmelerini açar.
+   * - 'tabs': bu pencerede; zaten açık URL'ler atlanır.
+   * - 'group': bu pencerede, klasörün adı ve renginde bir sekme grubu olarak; zaten açık olanlar da gruba alınır.
+   *   Sabitlenmiş sekmeler gruplanamaz: grup modunda sabitlenmeden açılır.
+   * - 'window': yeni bir pencerede, hepsi (başka pencerede açık olanlar da).
+   * activate: ilk sekmeye geç (tam ekran uygulamada 'tabs' modunda false).
    */
   const restoreFolder = useCallback(
-    async (
-      id: string,
-      recursive = false,
-      activate = true,
-    ): Promise<{ opened: number; skipped: number; deferred: number }> => {
+    async (id: string, recursive = false, activate = true, mode: RestoreMode = 'tabs'): Promise<RestoreResult> => {
       const current = normalizeWorkspaces(await readKey<WorkspaceMap>(STORAGE_KEY, EMPTY));
       const folder = current[id];
       if (!folder) throw new Error('Klasör bulunamadı (başka bir yerden silinmiş olabilir).');
 
       const folders = recursive ? collectSubtree(buildChildrenIndex(current), current, id) : [folder];
-      const tabs = folders.flatMap((f) => f.tabs);
+      // Klasörler arasında tekrar eden URL bir kez açılır.
+      const seen = new Set<string>();
+      const tabs = folders.flatMap((f) => f.tabs).filter((t) => !seen.has(t.url) && (seen.add(t.url), true));
       if (tabs.length === 0) throw new Error('Açılacak sekme yok.');
 
-      const openByUrl = new Map((await queryOpenTabs({ includePinned: true })).map((t) => [t.url, t.id]));
-      const seen = new Set<string>();
-      const toOpen: SavedTab[] = [];
-      let skipped = 0; // yalnızca zaten açık olanlar (klasörler arasında tekrar eden adres "açık" sayılmaz)
-      for (const tab of tabs) {
-        if (seen.has(tab.url)) continue; // klasörler arasında tekrar eden URL'yi bir kez aç
-        seen.add(tab.url);
-        if (openByUrl.has(tab.url)) skipped++;
-        else toOpen.push(tab);
-      }
-      if (toOpen.length === 0) {
-        // Hepsi zaten açık: hiçbir şey olmamış gibi görünmesin, ilkine geç.
-        const existing = openByUrl.get(tabs[0].url);
-        if (activate && existing !== undefined) await activateTab(existing);
-        return { opened: 0, skipped, deferred: 0 };
+      if (mode === 'window') {
+        const { ids, deferred } = await openTabsInNewWindow(tabs);
+        return { mode, opened: ids.length, skipped: 0, deferred, grouped: 0 };
       }
 
-      const { ids, deferred } = await openTabs(toOpen);
-      if (activate && ids.length > 0) await activateTab(ids[0]);
-      return { opened: ids.length, skipped, deferred };
+      // Yalnızca bu penceredeki açık sekmeler atlanır: başka pencerede açık olan burada yeniden açılır.
+      const open = await queryOpenTabs({ includePinned: true });
+      const openByUrl = new Map(open.map((t) => [t.url, t]));
+      const toOpen = tabs
+        .filter((t) => !openByUrl.has(t.url))
+        .map((t) => (mode === 'group' ? { ...t, pinned: false } : t));
+      const alreadyOpen = tabs.map((t) => openByUrl.get(t.url)).filter((t) => t !== undefined);
+      const skipped = alreadyOpen.length;
+
+      const { ids, deferred } = toOpen.length > 0 ? await openTabs(toOpen) : { ids: [], deferred: 0 };
+
+      let grouped = 0;
+      if (mode === 'group') {
+        const groupIds = [...alreadyOpen.filter((t) => !t.pinned).map((t) => t.id), ...ids];
+        await groupTabs(groupIds, folder.name, tabGroupColor(folder.color));
+        grouped = groupIds.length;
+      }
+
+      // Hiç yeni sekme açılmadıysa hiçbir şey olmamış gibi görünmesin: zaten açık olan ilkine geç.
+      const focusId = ids[0] ?? alreadyOpen[0]?.id;
+      if (activate && focusId !== undefined) await activateTab(focusId);
+      return { mode, opened: ids.length, skipped, deferred, grouped };
     },
-    [openTabs, activateTab],
+    [openTabs, openTabsInNewWindow, groupTabs, activateTab],
   );
 
   /** Sayfayı arka planda açar; bu pencerede zaten açıksa tekrar açmaz ('already-open'). */

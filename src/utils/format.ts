@@ -7,14 +7,6 @@ export function formatAgo(timestamp: number, now: number = Date.now()): string {
   if (hours < 24) return `${hours} sa önce`;
   return `${Math.floor(hours / 24)} gün önce`;
 }
-/** "Sekmeleri aç" sonucunu kullanıcıya gösterilecek tek cümleye çevirir. */
-export function formatRestoreMessage({ opened, skipped, deferred = 0 }: { opened: number; skipped: number; deferred?: number }): string {
-  if (opened === 0) return 'Tüm sekmeler zaten açık.';
-  let message = `${opened} sekme açıldı`;
-  if (skipped > 0) message += `, ${skipped} tanesi zaten açıktı`;
-  if (deferred > 0) message += ` (${deferred} tanesi tıklanınca yüklenecek)`;
-  return message + '.';
-}
 
 /** "Tümünü kaydet" sonucu: kaydedilen sayı, açık bırakılan (web dışı) sekmeler ve kapatma hatası. */
 export function formatSaveAllMessage(saved: number, folderName: string, skipped: number, closeFailed: boolean): string {

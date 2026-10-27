@@ -32,7 +32,10 @@ interface PopupFolderRowProps {
   busy: boolean;
   onToggle: () => void;
   onAdd: () => void;
-  onOpenAll: (e: MouseEvent<HTMLButtonElement>) => void;
+  /** Varsayılan açma (bu pencerede). */
+  onOpenAll: () => void;
+  /** Tüm açma seçenekleri menüsü. */
+  onOpenMenu: (e: MouseEvent<HTMLButtonElement>) => void;
   onOpenTab: (tab: SavedTab) => void;
   /** Sığmayan sekmeler için: klasörü tam ekranda aç. */
   onShowMore: () => void;
@@ -51,6 +54,7 @@ export function PopupFolderRow({
   onToggle,
   onAdd,
   onOpenAll,
+  onOpenMenu,
   onOpenTab,
   onShowMore,
 }: PopupFolderRowProps) {
@@ -62,8 +66,6 @@ export function PopupFolderRow({
   const shownTabs = listTabs.slice(0, EXPANDED_TAB_LIMIT);
 
   const isExpandable = tabs.length > 0 || childCount > 0;
-  // Alt klasörlerde de sekme varsa iki seçenek sunulur; klasörün kendi sekmesi yoksa doğrudan hepsi açılır.
-  const offersChoice = subtreeTabCount > tabs.length && tabs.length > 0;
   const accent = folderColorCss(workspace.color);
 
   const meta = [`${tabs.length} sekme`];
@@ -141,24 +143,31 @@ export function PopupFolderRow({
         >
           {justAdded ? <CheckIcon className="tf-check-pop text-emerald-600" strokeWidth={3} /> : <PlusIcon />}
         </IconButton>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onOpenAll}
-          disabled={busy || subtreeTabCount === 0}
-          title={
-            offersChoice
-              ? 'Sekmeleri aç (alt klasörler dahil seçilebilir)'
-              : subtreeTabCount > tabs.length
-                ? 'Alt klasörlerdeki tüm sekmeleri aç'
-                : 'Klasördeki tüm sekmeleri aç'
-          }
-          aria-haspopup={offersChoice ? 'menu' : undefined}
-        >
-          <ExternalLinkIcon width={13} height={13} />
-          Aç
-          {offersChoice && <ChevronDownIcon width={12} height={12} className="-mr-0.5 text-gray-500" />}
-        </Button>
+        {/* Bölünmüş düğme: "Aç" varsayılanı yapar, ok tüm seçenekleri (grup, yeni pencere…) gösterir. */}
+        <div className="flex shrink-0 items-center rounded-lg bg-gray-100">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onOpenAll}
+            disabled={busy || subtreeTabCount === 0}
+            title={tabs.length > 0 ? 'Klasördeki sekmeleri aç' : 'Alt klasörlerdeki sekmeleri aç'}
+            className="rounded-r-none!"
+          >
+            <ExternalLinkIcon width={13} height={13} />
+            Aç
+          </Button>
+          <button
+            type="button"
+            onClick={onOpenMenu}
+            disabled={busy || subtreeTabCount === 0}
+            aria-label={`“${workspace.name}” açma seçenekleri`}
+            aria-haspopup="menu"
+            title="Açma seçenekleri: alt klasörlerle, sekme grubu, yeni pencere"
+            className="inline-flex h-full items-center rounded-r-lg border-l border-gray-200 px-1 py-1.5 text-gray-500 hover:bg-gray-200 hover:text-gray-800 focus-visible:outline-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <ChevronDownIcon width={12} height={12} />
+          </button>
+        </div>
       </div>
 
       {isExpanded && listTabs.length > 0 && (
