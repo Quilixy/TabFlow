@@ -1,4 +1,4 @@
-import { LAST_FOLDER_KEY, TRASH_KEY, WORKSPACES_KEY } from '../storage/keys';
+import { LANGUAGE_KEY, LAST_FOLDER_KEY, TRASH_KEY, WORKSPACES_KEY } from '../storage/keys';
 import {
   isWorkspaceChange,
   migrateLegacyWorkspaces,
@@ -15,6 +15,7 @@ import { normalizeTrash, pruneTrash } from '../utils/trash';
 import { isHttpUrl } from '../utils/url';
 import { normalizeWorkspaces } from '../utils/workspaceTree';
 import { flashBadge, readWorkspaces, resolveLastFolder, savePageToFolder } from './saveFromBrowser';
+import { detectLanguage, LANGUAGES, setLanguage, t, type Lang } from '../i18n';
 
 // Tüm dinleyiciler en üst düzeyde ve eşzamanlı kaydedilir: MV3 service worker bir olayla uyandığında
 // dinleyicinin hazır olması gerekir.
@@ -25,6 +26,16 @@ import { flashBadge, readWorkspaces, resolveLastFolder, savePageToFolder } from 
 const openApp = () => {
   chrome.runtime.openOptionsPage().catch((e) => console.error('[TabFlow] tam ekran açılamadı.', e));
 };
+
+// ---- Dil: arayüzde seçilen (çözülmüş) dil depoda tutulur; yoksa tarayıcının dili ----------------
+const isLang = (value: unknown): value is Lang => (LANGUAGES as readonly unknown[]).includes(value);
+
+async function loadLanguage(): Promise<void> {
+  const stored = await readKey<unknown>(LANGUAGE_KEY, null);
+  setLanguage(isLang(stored) ? stored : detectLanguage());
+}
+// Her uyanışta ilk iş: menü ve rozet metinleri doğru dilde olsun.
+const languageReady = loadLanguage().catch(() => undefined);
 
 // ---- Sağ tık menüsü: "TabFlow'a kaydet → klasör" ------------------------------------
 let menuSignature = '';
@@ -46,6 +57,7 @@ const logMenuError = () => {
 
 /** Menüyü klasörlere göre yeniden kurar; içerik değişmediyse dokunmaz (kart sürüklemek de depoya yazar). */
 async function rebuildMenusNow(force: boolean): Promise<void> {
+  await languageReady;
   const [map, lastFolderId] = await Promise.all([readWorkspaces(), readKey<string | null>(LAST_FOLDER_KEY, null)]);
   const items = contextMenuItems(map, lastFolderId);
   const signature = JSON.stringify(items);
@@ -77,10 +89,11 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (folderId === null) return;
 
   void (async () => {
+    await languageReady;
     // "Son kullanılan" öğesi kimliği bilinmeyen bir hedefi gösterir: tıklama anında çöz.
     const target = folderId === '' ? await resolveLastFolder(await readWorkspaces()) : folderId;
     if (!target) {
-      flashBadge(tab?.id, '!', '#dc2626', 'TabFlow: önce bir klasör oluştur');
+      flashBadge(tab?.id, '!', '#dc2626', t('badge.createFirst'));
       return;
     }
 
@@ -95,7 +108,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       page = toOpenTab(tab);
     }
     if (!page) {
-      flashBadge(tab?.id, '!', '#dc2626', 'TabFlow: yalnızca web sayfaları kaydedilebilir');
+      flashBadge(tab?.id, '!', '#dc2626', t('badge.webOnly'));
       return;
     }
     await savePageToFolder(target, page, tab?.id);
@@ -106,24 +119,25 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 // Popup kapanınca (ör. sayfaya tıklanınca) kodu da durur; uzun açma işlemi burada yürür ki yarıda kalmasın.
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!isRestoreMessage(message) || sender.id !== chrome.runtime.id) return false;
-  restoreFolder(message).then(
+  languageReady.then(() => restoreFolder(message)).then(
     (result) => sendResponse({ ok: true, result } satisfies RestoreReply),
-    (e: unknown) => sendResponse({ ok: false, error: e instanceof Error ? e.message : 'Sekmeler açılamadı.' } satisfies RestoreReply),
+    (e: unknown) => sendResponse({ ok: false, error: e instanceof Error ? e.message : t('restore.err.tabs') } satisfies RestoreReply),
   );
   return true; // Yanıt eşzamansız gönderilecek
 });
 
 // ---- Kısayollar ----------------------------------------------------------------------
 async function saveActiveTabToLastFolder(): Promise<void> {
+  await languageReady;
   const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
   const page = active ? toOpenTab(active) : null;
   if (!page) {
-    flashBadge(active?.id, '!', '#dc2626', 'TabFlow: bu sayfa kaydedilemez (yalnızca web sayfaları)');
+    flashBadge(active?.id, '!', '#dc2626', t('badge.cannotSave'));
     return;
   }
   const target = await resolveLastFolder(await readWorkspaces());
   if (!target) {
-    flashBadge(active.id, '!', '#dc2626', 'TabFlow: önce bir klasör oluştur');
+    flashBadge(active.id, '!', '#dc2626', t('badge.createFirst'));
     return;
   }
   await savePageToFolder(target, page, active.id);
@@ -170,6 +184,11 @@ chrome.storage.onChanged.addListener((changes, area) => {
     scheduleMenuRebuild();
   }
   if (changes[LAST_FOLDER_KEY]) scheduleMenuRebuild();
+  const language = changes[LANGUAGE_KEY]?.newValue;
+  if (isLang(language)) {
+    setLanguage(language);
+    rebuildMenus(true).catch((e) => console.error('[TabFlow] menü kurulamadı.', e));
+  }
 });
 
 const onLaunch = () => {

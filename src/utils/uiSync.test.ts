@@ -57,6 +57,7 @@ describe('diffSyncedState', () => {
     pack: 'default',
     decor: true,
     deepPreview: true,
+    language: 'auto',
     closeOnAdd: false,
     lastBackupAt: null,
   };

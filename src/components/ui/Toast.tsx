@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useUiStore, type Toast as ToastData } from '../../store/useUiStore';
 import { XIcon } from './icons';
+import { t } from '../../i18n';
 
 const TOAST_DURATION_MS = 6000;
 
@@ -57,8 +58,8 @@ export function Toast({ inline = false, className = 'inset-x-3 bottom-3' }: Toas
             )}
             <button
               type="button"
-              aria-label="Bildirimi kapat"
-              title="Kapat"
+              aria-label={t('toast.dismiss')}
+              title={t('common.close')}
               onClick={dismissToast}
               className="inline-flex size-6 items-center justify-center rounded text-[rgb(255_255_255/0.6)] hover:bg-[rgb(255_255_255/0.1)] hover:text-[#fff]"
             >

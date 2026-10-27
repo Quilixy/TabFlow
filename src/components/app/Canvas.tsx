@@ -47,6 +47,7 @@ import { folderTargets, restoreEntries, type MenuEntry } from '../ui/menu';
 import type { RestoreMode } from '../../utils/restore';
 import { FolderCard } from './FolderCard';
 import { TabCard } from './TabCard';
+import { t } from '../../i18n';
 
 type ItemKind = 'tab' | 'folder';
 type CanvasItem = LayoutItem & { kind: ItemKind };
@@ -622,20 +623,20 @@ export function Canvas({
 
   // ---- Menüler -----------------------------------------------------------------
   const tabMenu = (tab: SavedTab): MenuEntry[] => {
-    const entries: MenuEntry[] = [{ label: 'Arka planda aç', onSelect: () => onOpenTab(tab) }];
+    const entries: MenuEntry[] = [{ label: t('canvas.openBackground'), onSelect: () => onOpenTab(tab) }];
     if (folderId === null) return entries;
     const targets = moveTargets.filter((f) => f.id !== folderId);
     if (targets.length > 0) {
       entries.push(
-        { type: 'heading', label: 'Klasöre taşı' },
+        { type: 'heading', label: t('canvas.moveTo') },
         ...folderTargets(targets, (f) => onMoveTab(folderId, tab.id, f.id, false)),
-        { type: 'heading', label: 'Klasöre kopyala' },
+        { type: 'heading', label: t('canvas.copyTo') },
         ...folderTargets(targets, (f) => onMoveTab(folderId, tab.id, f.id, true)),
       );
     }
     entries.push(
       { type: 'separator' },
-      { label: 'Klasörden kaldır', onSelect: () => onRemoveTab(folderId, tab.id), danger: true },
+      { label: t('canvas.removeFromFolder'), onSelect: () => onRemoveTab(folderId, tab.id), danger: true },
     );
     return entries;
   };
@@ -643,23 +644,23 @@ export function Canvas({
   const folderMenu = (target: Workspace, anchor: Point): MenuEntry[] => {
     const subtreeTabs = countTabs(collectSubtree(index, workspaces, target.id));
     const entries: MenuEntry[] = [
-      { label: 'Klasöre git', onSelect: () => onEnterFolder(target.id) },
+      { label: t('canvas.goToFolder'), onSelect: () => onEnterFolder(target.id) },
       ...restoreEntries(target.tabs.length, subtreeTabs, disabled, (recursive, mode) =>
         onRestoreFolder(target.id, recursive, mode),
       ),
     ];
     entries.push(
       { type: 'separator' },
-      { label: 'Alt klasör ekle', onSelect: () => onNewSubfolder(target.id), disabled },
+      { label: t('canvas.addSubfolder'), onSelect: () => onNewSubfolder(target.id), disabled },
       {
-        label: target.favorite ? 'Sabitlemeyi kaldır' : 'Üste sabitle',
+        label: target.favorite ? t('folder.unpin') : t('folder.pin'),
         onSelect: () => onToggleFavorite(target.id),
         disabled,
       },
-      { label: 'Yeniden adlandır (F2)', onSelect: () => onRenameFolder(target.id), disabled },
-      { label: 'Renk ve simge…', onSelect: () => onStyleFolder(target.id, anchor), disabled },
+      { label: t('folder.rename'), onSelect: () => onRenameFolder(target.id), disabled },
+      { label: t('folder.style'), onSelect: () => onStyleFolder(target.id, anchor), disabled },
       { type: 'separator' },
-      { label: 'Klasörü sil', onSelect: () => onDeleteFolder(target.id), danger: true, disabled },
+      { label: t('folder.delete'), onSelect: () => onDeleteFolder(target.id), danger: true, disabled },
     );
     return entries;
   };
@@ -670,10 +671,10 @@ export function Canvas({
     const count = tabIds.length + folderIds.length;
     const excluded = new Set([folderId, ...folderIds]);
     const targets = moveTargets.filter((f) => !excluded.has(f.id));
-    const entries: MenuEntry[] = [{ type: 'heading', label: `${count} öğe seçili` }];
+    const entries: MenuEntry[] = [{ type: 'heading', label: t('canvas.selectedCount', { n: count }) }];
     if (targets.length > 0) {
       entries.push(
-        { type: 'heading', label: 'Klasöre taşı' },
+        { type: 'heading', label: t('canvas.moveTo') },
         ...folderTargets(targets, (f) => {
           onMoveItems(tabIds, folderIds, f.id, false);
           setSelection(NO_SELECTION);
@@ -681,14 +682,14 @@ export function Canvas({
       );
       if (tabIds.length > 0 && folderIds.length === 0) {
         entries.push(
-          { type: 'heading', label: 'Klasöre kopyala' },
+          { type: 'heading', label: t('canvas.copyTo') },
           ...folderTargets(targets, (f) => onMoveItems(tabIds, [], f.id, true)).map((entry) => ({ ...entry, disabled })),
         );
       }
     }
     if (folderId !== null && folderIds.length > 0) {
       entries.push({
-        label: 'Klasörleri köke taşı',
+        label: t('canvas.moveFoldersToRoot'),
         onSelect: () => {
           onMoveItems([], folderIds, null, false);
           setSelection(NO_SELECTION);
@@ -698,9 +699,9 @@ export function Canvas({
     }
     entries.push(
       { type: 'separator' },
-      { label: 'Seçimi kaldır', onSelect: () => setSelection(NO_SELECTION) },
+      { label: t('canvas.clearSelection'), onSelect: () => setSelection(NO_SELECTION) },
       {
-        label: `Seçilenleri sil (${count})`,
+        label: t('canvas.deleteSelected', { n: count }),
         onSelect: () => {
           onDeleteItems(tabIds, folderIds);
           setSelection(NO_SELECTION);
@@ -849,7 +850,7 @@ export function Canvas({
       ref={containerRef}
       tabIndex={-1}
       role="application"
-      aria-label={folder ? `${folder.name} tuvali` : 'Kök tuval'}
+      aria-label={folder ? t('canvas.label', { name: folder.name }) : t('canvas.rootLabel')}
       onPointerDown={handleBackgroundPointerDown}
       onPointerMove={handleBackgroundPointerMove}
       onPointerUp={endPan}
@@ -944,15 +945,15 @@ export function Canvas({
           role="status"
         >
           <span>
-            <strong className="font-semibold text-gray-900">{selection.size}</strong> öğe seçili · sürükle, sağ tıkla ya da
-            Delete
+            <strong className="font-semibold text-gray-900">{t('count.items', { n: selection.size })}</strong>{' '}
+            {t('canvas.selectedHint')}
           </span>
           <button
             type="button"
             onClick={() => setSelection(NO_SELECTION)}
             className="rounded px-2 py-1 font-medium text-gray-600 hover:bg-gray-100"
           >
-            Kaldır
+            {t('common.remove')}
           </button>
         </div>
       )}
@@ -961,8 +962,8 @@ export function Canvas({
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
           <p className="max-w-xs text-center text-sm text-gray-500">
             {folderId === null
-              ? 'Henüz klasör yok. “Yeni klasör” ile başla.'
-              : 'Bu klasör boş. Sağdaki açık sekmeleri buraya sürükle ya da alt klasör ekle.'}
+              ? t('canvas.emptyRoot')
+              : t('canvas.emptyFolder')}
           </p>
         </div>
       )}
@@ -972,29 +973,29 @@ export function Canvas({
         onPointerDown={(e) => e.stopPropagation()}
         className="absolute right-3 bottom-3 flex items-center gap-0.5 rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
       >
-        <IconButton label="Uzaklaştır (Ctrl + tekerlek)" onClick={() => zoomBy(1 / 1.25)}>
+        <IconButton label={t('canvas.zoomOut')} onClick={() => zoomBy(1 / 1.25)}>
           <MinusIcon />
         </IconButton>
         <button
           type="button"
           onClick={() => setView({ ...DEFAULT_VIEW })}
-          title="Görünümü sıfırla"
+          title={t('canvas.resetView')}
           className="min-w-12 rounded-md px-1 text-xs font-medium text-gray-700 hover:bg-gray-100"
         >
           {Math.round(view.scale * 100)}%
         </button>
-        <IconButton label="Yakınlaştır (Ctrl + tekerlek)" onClick={() => zoomBy(1.25)}>
+        <IconButton label={t('canvas.zoomIn')} onClick={() => zoomBy(1.25)}>
           <PlusIcon />
         </IconButton>
         <span className="mx-0.5 h-4 w-px bg-gray-200" aria-hidden="true" />
-        <IconButton label="Tümünü sığdır" onClick={fitToContent} disabled={isEmpty}>
+        <IconButton label={t('canvas.fit')} onClick={fitToContent} disabled={isEmpty}>
           <ExpandIcon />
         </IconButton>
-        <IconButton label="Öğeleri ızgaraya diz" onClick={arrangeAll} disabled={disabled || isEmpty}>
+        <IconButton label={t('canvas.arrange')} onClick={arrangeAll} disabled={disabled || isEmpty}>
           <GridIcon />
         </IconButton>
         <IconButton
-          label={deepPreview ? 'Alt klasör içeriklerini gizle' : 'Alt klasör içeriklerini göster'}
+          label={deepPreview ? t('canvas.hidePreviews') : t('canvas.showPreviews')}
           aria-pressed={deepPreview}
           onClick={() => setDeepPreview(!deepPreview)}
           className={deepPreview ? 'bg-gray-100 text-gray-900' : ''}

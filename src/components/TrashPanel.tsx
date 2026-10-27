@@ -6,6 +6,7 @@ import { Button } from './ui/Button';
 import { FolderGlyph } from './ui/FolderGlyph';
 import { XIcon } from './ui/icons';
 import { IconButton } from './ui/IconButton';
+import { t } from '../i18n';
 
 const RETENTION_DAYS = Math.round(TRASH_RETENTION_MS / (24 * 60 * 60 * 1000));
 
@@ -51,17 +52,17 @@ export function TrashPanel({ entries, busy, onRestore, onDelete, onEmpty, onClos
       <header className="flex shrink-0 items-center gap-2 border-b border-gray-200 px-4 py-3">
         <div className="min-w-0 flex-1">
           <h2 id="tf-trash-title" className="text-sm font-semibold">
-            Çöp kutusu
+            {t('trash.title')}
           </h2>
-          <p className="text-xs text-gray-500">Öğeler {RETENTION_DAYS} gün sonra kendiliğinden silinir.</p>
+          <p className="text-xs text-gray-500">{t('trash.retention', { days: RETENTION_DAYS })}</p>
         </div>
-        <IconButton label="Kapat" onClick={onClose}>
+        <IconButton label={t('common.close')} onClick={onClose}>
           <XIcon />
         </IconButton>
       </header>
 
       {entries.length === 0 ? (
-        <p className="px-4 py-10 text-center text-sm text-gray-500">Çöp kutusu boş.</p>
+        <p className="px-4 py-10 text-center text-sm text-gray-500">{t('trash.empty')}</p>
       ) : (
         <ul className="min-h-0 flex-1 divide-y divide-gray-100 overflow-y-auto">
           {entries.map((entry) => {
@@ -80,13 +81,13 @@ export function TrashPanel({ entries, busy, onRestore, onDelete, onEmpty, onClos
                     {title}
                   </span>
                   <span className="block truncate text-xs text-gray-500">
-                    {detail} · {formatAgo(entry.deletedAt, now)} silindi
+                    {t('trash.deletedAgo', { detail, ago: formatAgo(entry.deletedAt, now) })}
                   </span>
                 </span>
                 <Button variant="secondary" size="sm" onClick={() => onRestore(entry.id)} disabled={busy}>
-                  Geri yükle
+                  {t('trash.restore')}
                 </Button>
-                <IconButton label={`“${title}” kalıcı olarak sil`} onClick={() => onDelete(entry.id)} disabled={busy}>
+                <IconButton label={t('trash.deleteForever', { title })} onClick={() => onDelete(entry.id)} disabled={busy}>
                   <XIcon />
                 </IconButton>
               </li>
@@ -99,9 +100,9 @@ export function TrashPanel({ entries, busy, onRestore, onDelete, onEmpty, onClos
         <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-gray-200 px-4 py-3">
           {confirmEmpty ? (
             <>
-              <span className="mr-auto text-xs text-gray-600">{entries.length} öğe kalıcı olarak silinecek.</span>
+              <span className="mr-auto text-xs text-gray-600">{t('trash.emptyConfirm', { n: entries.length })}</span>
               <Button variant="secondary" size="sm" onClick={() => setConfirmEmpty(false)}>
-                Vazgeç
+                {t('common.cancel')}
               </Button>
               <Button
                 variant="danger"
@@ -112,12 +113,12 @@ export function TrashPanel({ entries, busy, onRestore, onDelete, onEmpty, onClos
                   onEmpty();
                 }}
               >
-                Kalıcı olarak sil
+                {t('trash.deleteAll')}
               </Button>
             </>
           ) : (
             <Button variant="ghost" size="sm" onClick={() => setConfirmEmpty(true)} disabled={busy}>
-              Çöp kutusunu boşalt
+              {t('trash.emptyAction')}
             </Button>
           )}
         </footer>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button } from '../components/ui/Button';
+import { t } from '../i18n';
 
 export interface ConfirmOptions {
   title: string;
@@ -95,10 +96,10 @@ export function useConfirm(): { dialog: ReactNode; confirm: (options: ConfirmOpt
         {pending.message && <div id="tf-confirm-message" className="mt-1.5 text-sm whitespace-pre-line text-gray-600">{pending.message}</div>}
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={() => settle(false)}>
-            Vazgeç
+            {t('common.cancel')}
           </Button>
           <Button variant={pending.danger ? 'danger' : 'primary'} size="sm" autoFocus onClick={() => settle(true)}>
-            {pending.confirmLabel ?? 'Devam et'}
+            {pending.confirmLabel ?? t('common.continue')}
           </Button>
         </div>
       </div>

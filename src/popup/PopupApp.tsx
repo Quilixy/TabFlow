@@ -35,6 +35,7 @@ import {
   getPath,
   pathLabel,
 } from '../utils/workspaceTree';
+import { t } from '../i18n';
 
 const SAVE_ACTION = '__save__';
 const CREATE_ACTION = '__create__';
@@ -242,12 +243,12 @@ export default function PopupApp() {
           // Önce sayfayı doğrula: kaydedilemeyen bir sayfada boş klasör oluşmasın. Klasör ve sekme tek yazmada.
           const activeTab = await queryActiveTab();
           const { folder, closeFailed } = await createFolderWithTab(name, null, activeTab, closeOnAdd);
-          showToast(`Aktif sayfa “${folder.name}” klasörüne kaydedildi.${closeFailed ? ' Sekme kapatılamadı.' : ''}`);
+          showToast(t('popup.activeSaved', { folder: folder.name }) + (closeFailed ? t('popup.tabNotClosed') : ''));
         });
       }
       return run(CREATE_ACTION, async () => {
         const created = await createFolder(name, null);
-        showToast(`“${created.name}” klasörü oluşturuldu.`);
+        showToast(t('app.folderCreated', { name: created.name }));
       });
     },
     [composer, run, saveAndClose, createFolder, createFolderWithTab, closeOnAdd, showToast],
@@ -259,10 +260,10 @@ export default function PopupApp() {
         const activeTab = await queryActiveTab();
         const { added, closeFailed } = await addOpenTab(folderId, activeTab, closeOnAdd);
         if (!added) {
-          showToast(`Bu sayfa “${folderName}” klasöründe zaten var.`);
+          showToast(t('app.alreadyInFolder', { folder: folderName }));
           return;
         }
-        if (closeFailed) showToast(`Sayfa “${folderName}” klasörüne eklendi, ancak sekme kapatılamadı.`);
+        if (closeFailed) showToast(t('popup.addedNotClosed', { folder: folderName }));
 
         // Başarı animasyonu
         setJustAddedIds((prev) => ({ ...prev, [folderId]: Date.now() }));
@@ -284,12 +285,12 @@ export default function PopupApp() {
       void run(`restore:${folder.id}`, async () => {
         if (total > RESTORE_CONFIRM_THRESHOLD) {
           const ok = await confirm({
-            title: `En fazla ${total} sekme açılacak`,
+            title: t('restoreConfirm.title', { n: total }),
             message:
               mode === 'window'
-                ? 'Hepsi yeni bir pencerede açılır. Devam edilsin mi?'
-                : 'Bu pencerede zaten açık olanlar atlanır. Devam edilsin mi?',
-            confirmLabel: 'Sekmeleri aç',
+                ? t('restoreConfirm.window')
+                : t('restoreConfirm.tabs'),
+            confirmLabel: t('restoreConfirm.action'),
           });
           if (!ok) return;
         }
@@ -345,7 +346,7 @@ export default function PopupApp() {
     (tab: SavedTab) => {
       void run(`open-tab:${tab.id}`, async () => {
         const status = await openTab(tab);
-        showToast(status === 'opened' ? 'Sekme arka planda açıldı.' : 'Bu sayfa zaten açık.');
+        showToast(status === 'opened' ? t('tab.openedBackground') : t('tab.alreadyOpen'));
       });
     },
     [run, openTab, showToast],
@@ -375,7 +376,7 @@ export default function PopupApp() {
         <h1 className="text-base font-semibold text-gray-900">TabFlow</h1>
         <Button variant="secondary" size="sm" onClick={() => openFullApp()}>
           <ExpandIcon />
-          Tam ekranda aç
+          {t('popup.openFull')}
         </Button>
       </header>
 
@@ -388,8 +389,8 @@ export default function PopupApp() {
           autoFocus={!composer}
           onKeyDown={handleSearchKeyDown}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Klasör veya sekme ara…"
-          aria-label="Klasör veya sekme ara"
+          placeholder={t('search.placeholder')}
+          aria-label={t('search.label')}
           className="block w-full rounded-md border-0 bg-white py-2 pr-3 pl-8 text-sm text-gray-900 ring-1 ring-gray-300 ring-inset placeholder:text-gray-500 focus:ring-2 focus:ring-indigo-600"
         />
       </div>
@@ -398,7 +399,7 @@ export default function PopupApp() {
         <p className="flex shrink-0 items-start gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs text-gray-700">
           <CheckIcon width={14} height={14} className="mt-px shrink-0 text-emerald-600" strokeWidth={2.5} />
           <span className="min-w-0">
-            Bu sayfa zaten kayıtlı:{' '}
+            {t('popup.alreadySaved')}{' '}
             {savedIn.map((s, i) => (
               <span key={s.id}>
                 {i > 0 && ', '}
@@ -434,21 +435,21 @@ export default function PopupApp() {
         </div>
       )}
 
-      <section aria-label="Klasörler" className="flex min-h-0 flex-1 flex-col">
+      <section aria-label={t('common.folders')} className="flex min-h-0 flex-1 flex-col">
         <h2 className="mb-1.5 shrink-0 text-xs font-medium text-gray-500">
-          {hasQuery ? 'Sonuçlar' : 'Klasörler'}
+          {hasQuery ? t('popup.results') : t('common.folders')}
         </h2>
         {isLoading ? (
-          <p className="py-4 text-center text-sm text-gray-500">Yükleniyor…</p>
+          <p className="py-4 text-center text-sm text-gray-500">{t('common.loading')}</p>
         ) : treeRows.length === 0 ? (
           <p className="py-4 text-center text-sm text-gray-500">
-            {hasQuery ? 'Eşleşen klasör yok.' : 'Henüz klasör yok. Aşağıdan oluştur.'}
+            {hasQuery ? t('popup.noMatch') : t('popup.empty')}
           </p>
         ) : (
           <ul
             ref={listRef}
             onKeyDown={handleListKeyDown}
-            aria-label="Klasörler (ok tuşlarıyla gezin)"
+            aria-label={t('popup.listLabel')}
             className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-[var(--tf-card-border)] bg-white p-1 shadow-sm"
           >
             {treeRows.map((row) => {
@@ -485,18 +486,18 @@ export default function PopupApp() {
       <footer className="shrink-0 space-y-2 border-t border-gray-200 pt-3">
         <div className="flex gap-2">
           <Button size="sm" className="flex-1" onClick={() => setComposer('saveAll')} disabled={isBusy}>
-            Tümünü kaydet
+            {t('popup.saveAll')}
           </Button>
           <Button variant="soft" size="sm" className="flex-1" onClick={() => setComposer('saveActive')} disabled={isBusy}>
-            Aktifi kaydet
+            {t('popup.saveActive')}
           </Button>
           <Button
             variant="secondary"
             size="sm"
             onClick={() => setComposer('empty')}
             disabled={isBusy}
-            title="Yeni klasör oluştur"
-            aria-label="Yeni klasör oluştur"
+            title={t('popup.newFolder')}
+            aria-label={t('popup.newFolder')}
           >
             <PlusIcon />
           </Button>
@@ -508,7 +509,7 @@ export default function PopupApp() {
             onChange={(e) => setCloseOnAdd(e.target.checked)}
             className="size-4 accent-indigo-600"
           />
-          Eklediğim sayfayı kapat
+          {t('popup.closeOnAdd')}
         </label>
       </footer>
 

@@ -10,6 +10,7 @@ import {
 } from '../utils/folderStyle';
 import { FolderGlyph } from './ui/FolderGlyph';
 import { CheckIcon } from './ui/icons';
+import { t } from '../i18n';
 
 export interface FolderStylePatch {
   /** null: varsayılana dön */
@@ -91,7 +92,7 @@ export function FolderStylePicker({ folder, x, y, onChange, onClose }: FolderSty
     <div
       ref={ref}
       role="dialog"
-      aria-label="Klasör rengi ve simgesi"
+      aria-label={t('style.dialog')}
       style={{ left: x, top: y }}
       onPointerDown={(e) => e.stopPropagation()}
       onContextMenu={(e) => e.preventDefault()}
@@ -99,12 +100,12 @@ export function FolderStylePicker({ folder, x, y, onChange, onClose }: FolderSty
       className="fixed z-50 w-64 space-y-3 rounded-lg border border-gray-200 bg-white p-3 shadow-lg"
     >
       <div>
-        <p className="mb-1.5 text-xs font-medium text-gray-500">Renk</p>
+        <p className="mb-1.5 text-xs font-medium text-gray-500">{t('style.color')}</p>
         <div className="flex flex-wrap gap-1.5">
           <button
             type="button"
-            title="Varsayılan (tema rengi)"
-            aria-label="Varsayılan renk"
+            title={t('style.defaultTitle')}
+            aria-label={t('style.defaultLabel')}
             aria-pressed={folder.color === undefined}
             onClick={() => onChange({ color: null })}
             style={{ backgroundColor: DEFAULT_FOLDER_COLOR_CSS }}
@@ -116,8 +117,8 @@ export function FolderStylePicker({ folder, x, y, onChange, onClose }: FolderSty
             <button
               key={id}
               type="button"
-              title={FOLDER_COLOR_LABELS[id]}
-              aria-label={FOLDER_COLOR_LABELS[id]}
+              title={t(FOLDER_COLOR_LABELS[id])}
+              aria-label={t(FOLDER_COLOR_LABELS[id])}
               aria-pressed={folder.color === id}
               onClick={() => onChange({ color: id })}
               style={{ backgroundColor: FOLDER_COLORS[id] }}
@@ -130,7 +131,7 @@ export function FolderStylePicker({ folder, x, y, onChange, onClose }: FolderSty
       </div>
 
       <div>
-        <p className="mb-1.5 text-xs font-medium text-gray-500">Simge</p>
+        <p className="mb-1.5 text-xs font-medium text-gray-500">{t('style.icon')}</p>
         <div className="grid grid-cols-7 gap-1">
           {FOLDER_ICON_IDS.map((id) => {
             const selected = (folder.icon ?? 'folder') === id;
@@ -138,8 +139,8 @@ export function FolderStylePicker({ folder, x, y, onChange, onClose }: FolderSty
               <button
                 key={id}
                 type="button"
-                title={FOLDER_ICON_LABELS[id]}
-                aria-label={FOLDER_ICON_LABELS[id]}
+                title={t(FOLDER_ICON_LABELS[id])}
+                aria-label={t(FOLDER_ICON_LABELS[id])}
                 aria-pressed={selected}
                 onClick={() => onChange({ icon: id === 'folder' ? null : id })}
                 className={`inline-flex size-8 items-center justify-center rounded-md hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-indigo-600 ${

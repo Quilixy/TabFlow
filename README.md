@@ -10,6 +10,7 @@ Sekmelerini klasörlere ve serbest bir tuvale kaydet, kapat ve saniyeler içinde
 - **Açma seçenekleri:** klasörü bu pencerede, alt klasörleriyle birlikte, klasörün adı ve renginde bir **sekme grubu** olarak ya da **yeni pencerede** aç.
 - **Sıralama ve sabitleme:** ağaçta bir klasörü başka bir satırın üst/alt kenarına sürükleyerek sırala (`Alt+↑/↓` da olur); "Üste sabitle" ile sık kullanılanları en üstte tut.
 - **Tuvalde çoklu seçim:** `Ctrl`/`Shift` + tık ile seç, `Shift` + boş alanda sürükleyerek alan seç, `Ctrl+A` ile tümünü seç. Seçilenleri birlikte sürükle, bir klasöre bırak, sağ tıkla taşı ya da `Delete` ile sil.
+- **Türkçe ve İngilizce arayüz:** *Görünüm → Dil* (Otomatik tarayıcının dilini izler). Eklentinin adı, açıklaması ve kısayol açıklamaları da çevrilidir.
 - **Popup:** aktif sayfa kayıtlıysa hangi klasörlerde olduğunu gösterir; arama sonuçlarında ok tuşlarıyla gezilir (`↓` sonuçlara iner, `→`/`←` klasörü açar/kapatır).
 - Türkçe karakterlere duyarlı arama: "istanbul" → "İstanbul", "calisma" → "Çalışma".
 - Çok sayıda sekme açılırken ilk 10'u yüklenir, kalanlar tıklanınca yüklenir (RAM şişmez).
@@ -92,6 +93,7 @@ Veriler yalnızca bu tarayıcıda (`chrome.storage.local`) tutulur; hiçbir sunu
 ## Proje yapısı
 
 ```
+public/_locales/  manifest metinleri (ad, açıklama, kısayollar)
 src/
   background/   service worker (kısayollar, sağ tık menüsü, otomatik yedek)
   popup/        araç çubuğu açılır penceresi
@@ -100,6 +102,14 @@ src/
   hooks/        depolama, sekme ve onay kancaları
   storage/      React'ten bağımsız depolama (kilitli yazma, yedekler); service worker da kullanır
   store/        arayüz durumu (zustand) ve pencereler arası eşitleme
+  services/     React'ten bağımsız sekme açma (popup bunu service worker'a yaptırır)
+  i18n/         arayüz metinleri: tr.ts (kaynak) ve en.ts; t('anahtar', { parametre })
   utils/        saf mantık (ağaç, arama, yedek, tuval matematiği) ve testleri
   styles/       tema değişkenleri
 ```
+
+## Çeviri
+
+Arayüz metinleri `src/i18n/tr.ts` (kaynak) ve `src/i18n/en.ts` dosyalarındadır. Yeni bir metin eklerken iki dosyaya
+da aynı anahtarı ekle; İngilizce sözlükte eksik anahtar derleme hatası verir. Çoğul gereken İngilizce metinler
+`plural()` kullanan küçük fonksiyonlardır. Manifest metinleri `public/_locales/<dil>/messages.json` içindedir.

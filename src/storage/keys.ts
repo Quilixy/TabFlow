@@ -8,3 +8,5 @@ export const SNAPSHOTS_KEY = 'snapshots';
 export const SNAPSHOT_META_KEY = 'snapshotMeta';
 /** En son sekme eklenen klasör (kısayol ve sağ tık menüsü için). */
 export const LAST_FOLDER_KEY = 'lastFolderId';
+/** Çözülmüş arayüz dili ('tr' | 'en'): service worker sağ tık menüsü ve rozetler için okur. */
+export const LANGUAGE_KEY = 'language';

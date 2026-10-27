@@ -32,6 +32,7 @@ import {
   siblingItemCount,
   toFolderRefs,
 } from '../utils/workspaceTree';
+import { t } from '../i18n';
 
 const NO_TRASH: TrashEntry[] = [];
 
@@ -49,7 +50,7 @@ const updateTrash = (fn: (entries: TrashEntry[]) => TrashEntry[]) =>
 
 const requireName = (rawName: string): string => {
   const name = rawName.trim();
-  if (!name) throw new Error('Klasör adı boş olamaz.');
+  if (!name) throw new Error(t('error.emptyName'));
   return name;
 };
 
@@ -99,7 +100,7 @@ export function useWorkspaces() {
       const name = requireName(rawName);
       const id = crypto.randomUUID();
       const next = await update((current) => {
-        if (parentId !== null && !current[parentId]) throw new Error('Üst klasör bulunamadı.');
+        if (parentId !== null && !current[parentId]) throw new Error(t('error.parentMissing'));
         const now = Date.now();
         const pos = position ?? gridPosition(siblingItemCount(current, parentId));
         const folder: Workspace = { id, name, createdAt: now, updatedAt: now, parentId, x: pos.x, y: pos.y, tabs: [] };
@@ -121,7 +122,7 @@ export function useWorkspaces() {
       const name = requireName(rawName);
       const id = crypto.randomUUID();
       const next = await update((current) => {
-        if (parentId !== null && !current[parentId]) throw new Error('Üst klasör bulunamadı.');
+        if (parentId !== null && !current[parentId]) throw new Error(t('error.parentMissing'));
         const now = Date.now();
         const pos = gridPosition(siblingItemCount(current, parentId));
         const folder: Workspace = {
@@ -154,14 +155,14 @@ export function useWorkspaces() {
       if (open.length === 0) {
         throw new Error(
           includePinned
-            ? 'Kaydedilecek sekme bulunamadı.'
-            : 'Kaydedilecek sekme bulunamadı (sabitlenmiş sekmeler hariç tutuldu).',
+            ? t('error.nothingToSave')
+            : t('error.nothingToSavePinned'),
         );
       }
 
       const id = crypto.randomUUID();
       const next = await update((current) => {
-        if (parentId !== null && !current[parentId]) throw new Error('Üst klasör bulunamadı.');
+        if (parentId !== null && !current[parentId]) throw new Error(t('error.parentMissing'));
         const now = Date.now();
         const pos = gridPosition(siblingItemCount(current, parentId));
         const folder: Workspace = {
@@ -188,7 +189,7 @@ export function useWorkspaces() {
       const name = requireName(rawName);
       await update((current) => {
         const target = current[id];
-        if (!target) throw new Error('Klasör bulunamadı.');
+        if (!target) throw new Error(t('error.folderMissing'));
         return { ...current, [id]: { ...target, name, updatedAt: Date.now() } };
       });
     },
@@ -218,7 +219,7 @@ export function useWorkspaces() {
         await updateTrash((entries) => pushTrash(entries, entry, now));
       } catch (e) {
         await update((current) => restoreTrashEntry(current, entry, Date.now()));
-        throw new Error('Klasör çöp kutusuna taşınamadı, silinmedi.', { cause: e });
+        throw new Error(t('error.trashFolder'), { cause: e });
       }
       return { removed, trashId: entry.id };
     },
@@ -297,10 +298,10 @@ export function useWorkspaces() {
       let status: 'moved' | 'unchanged' | 'repositioned' = 'moved';
       await update((current) => {
         const folder = current[folderId];
-        if (!folder) throw new Error('Klasör bulunamadı.');
-        if (newParentId !== null && !current[newParentId]) throw new Error('Hedef klasör bulunamadı.');
+        if (!folder) throw new Error(t('error.folderMissing'));
+        if (newParentId !== null && !current[newParentId]) throw new Error(t('error.targetFolderMissing'));
         if (!canReparent(current, folderId, newParentId)) {
-          throw new Error('Bir klasör kendi alt klasörüne taşınamaz.');
+          throw new Error(t('error.cycle'));
         }
         if (folder.parentId === newParentId) {
           if (!position) {
@@ -413,9 +414,9 @@ export function useWorkspaces() {
       await update((current) => {
         const source = current[fromFolderId];
         const target = current[toFolderId];
-        if (!source || !target) throw new Error('Klasör bulunamadı.');
+        if (!source || !target) throw new Error(t('error.folderMissing'));
         const tab = source.tabs.find((t) => t.id === tabId);
-        if (!tab) throw new Error('Sekme bulunamadı.');
+        if (!tab) throw new Error(t('error.tabMissing'));
 
         if (target.tabs.some((t) => t.url === tab.url)) {
           status = 'duplicate';
@@ -477,7 +478,7 @@ export function useWorkspaces() {
         await updateTrash((list) => entries.reduce((acc, entry) => pushTrash(acc, entry, now), list));
       } catch (e) {
         await update((current) => entries.reduce((map, entry) => restoreTrashEntry(map, entry, Date.now()), current));
-        throw new Error('Seçilenler çöp kutusuna taşınamadı, kaldırılmadı.', { cause: e });
+        throw new Error(t('error.trashItems'), { cause: e });
       }
       return entries.map((e) => e.id);
     },
@@ -527,7 +528,7 @@ export function useWorkspaces() {
         await updateTrash((entries) => pushTrash(entries, removed, now));
       } catch (e) {
         await update((current) => restoreTrashEntry(current, removed, Date.now()));
-        throw new Error('Sekme çöp kutusuna taşınamadı, kaldırılmadı.', { cause: e });
+        throw new Error(t('error.trashTab'), { cause: e });
       }
       return { trashId: removed.id };
     },
@@ -569,7 +570,7 @@ export function useWorkspaces() {
   const restoreSnapshot = useCallback(
     async (takenAt: number): Promise<Snapshot> => {
       const snapshot = (await readSnapshots()).find((s) => s.takenAt === takenAt);
-      if (!snapshot) throw new Error('Yedek bulunamadı.');
+      if (!snapshot) throw new Error(t('error.snapshotMissing'));
       const current = await readWorkspaceMap();
       await takeSnapshot(current, Date.now(), 'before-restore');
       const restored = normalizeWorkspaces(snapshot.workspaces);

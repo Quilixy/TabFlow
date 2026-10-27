@@ -5,6 +5,7 @@ import { hostOf } from '../../utils/url';
 import { Favicon } from '../Favicon';
 import { ArrowUpRightIcon, XIcon } from '../ui/icons';
 import { IconButton } from '../ui/IconButton';
+import { t } from '../../i18n';
 
 interface TabCardProps {
   tab: SavedTab;
@@ -43,7 +44,7 @@ export const TabCard = memo(function TabCard({ tab, x, y, isDragging, isSelected
         if ((e.target as HTMLElement).closest('[data-no-drag]')) return;
         onOpen(tab.id);
       }}
-      title={`${tab.title}\n${tab.url}\nÇift tık: arka planda aç`}
+      title={t('card.tabTitle', { title: tab.title, url: tab.url })}
       className={`group absolute rounded-2xl border bg-white p-3 outline-none select-none transition duration-200 ease-out focus-visible:ring-2 focus-visible:ring-indigo-500 ${
         isDragging 
           ? 'z-20 border-gray-400 cursor-grabbing shadow-2xl' 
@@ -61,10 +62,10 @@ export const TabCard = memo(function TabCard({ tab, x, y, isDragging, isSelected
           <p className="mt-0.5 truncate text-[11px] font-medium text-gray-400">{hostOf(tab.url)}</p>
         </div>
         <div data-no-drag className="-mt-1 -mr-1 flex flex-col opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 transition-opacity">
-          <IconButton label="Arka planda aç" onClick={() => onOpen(tab.id)}>
+          <IconButton label={t('canvas.openBackground')} onClick={() => onOpen(tab.id)}>
             <ArrowUpRightIcon />
           </IconButton>
-          <IconButton label="Klasörden kaldır" onClick={() => onRemove(tab.id)}>
+          <IconButton label={t('canvas.removeFromFolder')} onClick={() => onRemove(tab.id)}>
             <XIcon />
           </IconButton>
         </div>

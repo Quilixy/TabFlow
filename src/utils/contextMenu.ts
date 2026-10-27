@@ -1,5 +1,6 @@
 import type { WorkspaceMap } from '../types';
 import { pathLabel } from './workspaceTree';
+import { t } from '../i18n';
 
 /** Sağ tık menüsünün kökü ("TabFlow'a kaydet"). */
 export const MENU_ROOT_ID = 'tabflow-save';
@@ -25,17 +26,17 @@ function menuTitle(text: string): string {
 
 /** "TabFlow'a kaydet" menüsünün öğeleri: son kullanılan klasör, ardından en son güncellenen klasörler. */
 export function contextMenuItems(map: WorkspaceMap, lastFolderId: string | null): MenuItemSpec[] {
-  const items: MenuItemSpec[] = [{ id: MENU_ROOT_ID, title: "TabFlow'a kaydet" }];
+  const items: MenuItemSpec[] = [{ id: MENU_ROOT_ID, title: t('menu.saveTo') }];
   const folders = Object.values(map);
   if (folders.length === 0) {
-    items.push({ id: 'tabflow-empty', parentId: MENU_ROOT_ID, title: 'Önce bir klasör oluştur', enabled: false });
+    items.push({ id: 'tabflow-empty', parentId: MENU_ROOT_ID, title: t('menu.createFirst'), enabled: false });
     return items;
   }
 
   const last = lastFolderId !== null ? map[lastFolderId] : undefined;
   if (last) {
     items.push(
-      { id: LAST_ITEM_ID, parentId: MENU_ROOT_ID, title: menuTitle(`Son kullanılan: ${pathLabel(map, last.id)}`) },
+      { id: LAST_ITEM_ID, parentId: MENU_ROOT_ID, title: menuTitle(t('menu.lastUsed', { path: pathLabel(map, last.id) })) },
       { id: 'tabflow-sep', parentId: MENU_ROOT_ID, type: 'separator' },
     );
   }

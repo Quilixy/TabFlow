@@ -130,4 +130,18 @@ test.describe('tam ekran uygulama', () => {
     await expect.poll(async () => (await readStorage<{ favorite?: boolean }>('ws:b'))?.favorite).toBe(true);
     expect((await readStorage<{ favorite?: boolean }>('ws:a'))?.favorite).toBeUndefined();
   });
+
+  test('dil İngilizceye çevrilir ve hatırlanır', async ({ openApp, readStorage }) => {
+    const app = await openApp();
+    await app.getByRole('button', { name: 'Görünüm' }).click();
+    await app.getByRole('button', { name: 'English' }).click();
+
+    await expect(app.getByRole('button', { name: 'New folder', exact: true })).toBeVisible();
+    await expect(app.locator('html')).toHaveAttribute('lang', 'en');
+    // Arka plan (sağ tık menüsü, rozet) de aynı dili kullanır.
+    await expect.poll(() => readStorage<string>('language')).toBe('en');
+
+    await app.reload();
+    await expect(app.getByRole('button', { name: 'New folder', exact: true })).toBeVisible();
+  });
 });

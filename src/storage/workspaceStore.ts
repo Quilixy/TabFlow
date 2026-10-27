@@ -2,6 +2,7 @@ import type { WorkspaceMap } from '../types';
 import { normalizeWorkspaces } from '../utils/workspaceTree';
 import { WORKSPACES_KEY } from './keys';
 import { StorageError, withLock } from './kv';
+import { t } from '../i18n';
 
 /**
  * Klasörlerin depolanması: her klasör kendi anahtarında (`ws:<id>`), kimlik listesi `wsIndex`te.
@@ -50,7 +51,7 @@ async function readRawState(): Promise<RawRead> {
     }
     return { raw, legacy: false, index };
   } catch (e) {
-    throw new StorageError('Klasörler okunamadı.', e);
+    throw new StorageError(t('error.readFolders'), e);
   }
 }
 
@@ -96,7 +97,7 @@ export function updateWorkspaces(fn: (map: WorkspaceMap) => WorkspaceMap): Promi
       // Önce yaz (dizin dahil, tek çağrıda), sonra sil: silme başarısız olursa artıklar dizinde olmadığı için görünmez.
       if (Object.keys(writes).length > 0) await chrome.storage.local.set(writes);
     } catch (e) {
-      throw new StorageError('Klasörler yazılamadı (depolama kotası dolmuş olabilir).', e);
+      throw new StorageError(t('error.writeFolders'), e);
     }
     if (removals.length > 0) await chrome.storage.local.remove(removals).catch(() => undefined);
     return next;

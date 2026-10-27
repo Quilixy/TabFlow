@@ -1,4 +1,5 @@
 import { ACCENT_IDS, ANIMATION_STYLES, THEME_MODES, THEME_PACKS } from './theme';
+import { isLanguageSetting, type LanguageSetting } from '../i18n';
 
 /** Pencereler (popup ↔ tam ekran) arasında canlı eşitlenen ayarlar. Gezinti durumu (seçili klasör, açık dallar) bilerek HARİÇ. */
 export interface SyncedUiState {
@@ -8,6 +9,7 @@ export interface SyncedUiState {
   pack: (typeof THEME_PACKS)[number];
   decor: boolean;
   deepPreview: boolean;
+  language: LanguageSetting;
   closeOnAdd: boolean;
   lastBackupAt: number | null;
 }
@@ -42,6 +44,7 @@ export function pickSyncedState(rawJson: string | null): Partial<SyncedUiState> 
   if (pack) patch.pack = pack;
   if (typeof state.decor === 'boolean') patch.decor = state.decor;
   if (typeof state.deepPreview === 'boolean') patch.deepPreview = state.deepPreview;
+  if (isLanguageSetting(state.language)) patch.language = state.language;
   if (typeof state.closeOnAdd === 'boolean') patch.closeOnAdd = state.closeOnAdd;
   if (state.lastBackupAt === null || (typeof state.lastBackupAt === 'number' && Number.isFinite(state.lastBackupAt))) {
     patch.lastBackupAt = state.lastBackupAt;

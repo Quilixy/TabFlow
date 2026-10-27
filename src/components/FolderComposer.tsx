@@ -1,6 +1,7 @@
 import type { FormEvent, KeyboardEvent } from 'react';
 import { useUiStore } from '../store/useUiStore';
 import { Button } from './ui/Button';
+import { t } from '../i18n';
 
 export type ComposerMode = 'empty' | 'saveAll' | 'saveActive';
 
@@ -44,23 +45,23 @@ export function FolderComposer({ mode, isBusy, disabled, parentName = null, onSu
       className="space-y-2 rounded-lg border border-indigo-200 bg-indigo-50/60 p-3"
     >
       <label htmlFor="workspace-name" className="block text-sm font-semibold text-gray-900">
-        {isSaveAll 
-          ? 'Açık sekmeleri kaydet' 
-          : isSaveActive 
-          ? 'Aktif sekmeyi kaydet' 
-          : parentName 
-          ? 'Yeni alt klasör' 
-          : 'Yeni klasör'}
+        {isSaveAll
+          ? t('composer.saveAllTitle')
+          : isSaveActive
+            ? t('composer.saveActiveTitle')
+            : parentName
+              ? t('composer.newSubfolder')
+              : t('composer.newFolder')}
       </label>
-      {parentName && !isSaveAll && !isSaveActive && <p className="text-xs text-gray-600">“{parentName}” içinde oluşturulacak.</p>}
+      {parentName && !isSaveAll && !isSaveActive && <p className="text-xs text-gray-600">{t('composer.inParent', { parent: parentName })}</p>}
       {isSaveAll && (
         <p className="text-xs text-gray-600">
-          Penceredeki açık sekmeler bu adla yeni bir klasöre kaydedilir ve kapatılır.
+          {t('composer.saveAllHelp')}
         </p>
       )}
       {isSaveActive && (
         <p className="text-xs text-gray-600">
-          Şu an baktığın sayfa bu adla oluşturulacak yeni klasöre kaydedilir.
+          {t('composer.saveActiveHelp')}
         </p>
       )}
       <input
@@ -70,7 +71,7 @@ export function FolderComposer({ mode, isBusy, disabled, parentName = null, onSu
         maxLength={60}
         autoFocus
         disabled={disabled}
-        placeholder={isSaveAll || isSaveActive ? 'Örn. Araştırma' : 'Klasör adı'}
+        placeholder={isSaveAll || isSaveActive ? t('composer.placeholderSave') : t('composer.placeholderName')}
         onChange={(e) => setDraftName(e.target.value)}
         onKeyDown={handleKeyDown}
         className="block w-full rounded-md border-0 bg-white px-3 py-2 text-sm text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-500 focus:ring-2 focus:ring-indigo-600 disabled:opacity-60"
@@ -84,15 +85,15 @@ export function FolderComposer({ mode, isBusy, disabled, parentName = null, onSu
             onChange={(e) => setIncludePinned(e.target.checked)}
             className="size-4 accent-indigo-600"
           />
-          Sabitlenmiş sekmeleri de dahil et
+          {t('composer.includePinned')}
         </label>
       )}
       <div className="flex justify-end gap-2 mt-2">
         <Button variant="ghost" size="sm" onClick={onClose} disabled={isBusy}>
-          Vazgeç
+          {t('common.cancel')}
         </Button>
         <Button type="submit" size="sm" isLoading={isBusy} disabled={!canSubmit}>
-          {isSaveAll || isSaveActive ? 'Kaydet' : 'Oluştur'}
+          {isSaveAll || isSaveActive ? t('common.save') : t('common.create')}
         </Button>
       </div>
     </form>

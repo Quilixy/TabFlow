@@ -3,6 +3,7 @@ import type { PageInfo } from '../types';
 import { tabGroupColor, type RestoreMode, type RestoreResult, type TabGroupColor } from '../utils/restore';
 import { toOpenTab } from '../utils/tabs';
 import { buildChildrenIndex, collectSubtree } from '../utils/workspaceTree';
+import { t } from '../i18n';
 
 /**
  * Klasör sekmelerini açma (bu pencerede / sekme grubu / yeni pencere). React'ten bağımsızdır: tam ekran uygulama
@@ -92,7 +93,7 @@ export async function openInNewWindow(tabs: PageInfo[]): Promise<{ ids: number[]
   if (!first) return { ids: [], deferred: 0 };
   const win = await chrome.windows.create({ url: first.url, focused: true });
   const firstId = win?.tabs?.[0]?.id;
-  if (win?.id === undefined || firstId === undefined) throw new Error('Pencere oluşturulamadı.');
+  if (win?.id === undefined || firstId === undefined) throw new Error(t('restore.err.windowCreate'));
   if (first.pinned) await chrome.tabs.update(firstId, { pinned: true });
   return createTabsIn(win.id, rest, [firstId]);
 }
@@ -130,13 +131,13 @@ export async function restoreFolder(options: RestoreRequestOptions): Promise<Res
   try {
     const current = await readWorkspaceMap();
     const folder = current[folderId];
-    if (!folder) throw new RestoreError('Klasör bulunamadı (başka bir yerden silinmiş olabilir).');
+    if (!folder) throw new RestoreError(t('restore.err.folderMissing'));
 
     const folders = recursive ? collectSubtree(buildChildrenIndex(current), current, folderId) : [folder];
     // Klasörler arasında tekrar eden URL bir kez açılır.
     const seen = new Set<string>();
     const tabs = folders.flatMap((f) => f.tabs).filter((t) => !seen.has(t.url) && (seen.add(t.url), true));
-    if (tabs.length === 0) throw new RestoreError('Açılacak sekme yok.');
+    if (tabs.length === 0) throw new RestoreError(t('restore.err.noTabs'));
 
     if (mode === 'window') {
       const { ids, deferred } = await openInNewWindow(tabs);
@@ -168,7 +169,7 @@ export async function restoreFolder(options: RestoreRequestOptions): Promise<Res
     if (e instanceof RestoreError) throw new Error(e.message, { cause: e });
     console.error('[TabFlow] sekmeler açılamadı.', e);
     throw new Error(
-      mode === 'group' ? 'Sekme grubu oluşturulamadı.' : mode === 'window' ? 'Yeni pencere açılamadı.' : 'Sekmeler açılamadı.',
+      t(mode === 'group' ? 'restore.err.group' : mode === 'window' ? 'restore.err.window' : 'restore.err.tabs'),
       { cause: e },
     );
   }
@@ -205,7 +206,7 @@ export async function restoreInBackground(options: RestoreRequestOptions): Promi
   const reply = (await chrome.runtime.sendMessage({ type: RESTORE_MESSAGE, ...options } satisfies RestoreMessage)) as
     | RestoreReply
     | undefined;
-  if (!reply) throw new Error('Arka plan yanıt vermedi; eklentiyi yeniden yüklemeyi dene.');
+  if (!reply) throw new Error(t('restore.err.noReply'));
   if (!reply.ok) throw new Error(reply.error);
   return reply.result;
 }
@@ -213,6 +214,6 @@ export async function restoreInBackground(options: RestoreRequestOptions): Promi
 /** Bu sayfanın penceresi (popup: altındaki tarayıcı penceresi). */
 export async function currentWindowId(): Promise<number> {
   const win = await chrome.windows.getCurrent();
-  if (win.id === undefined) throw new Error('Aktif pencere bulunamadı.');
+  if (win.id === undefined) throw new Error(t('error.noActiveWindow'));
   return win.id;
 }

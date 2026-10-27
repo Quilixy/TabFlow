@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 /**
  * chrome.storage.local üzerinde kilitli okuma-değiştirme-yazma. React'ten bağımsızdır: popup, tam ekran
  * uygulama ve service worker aynı kodu kullanır.
@@ -16,7 +18,7 @@ export class StorageError extends Error {
  * Hatayı StorageError'a çevirir. Güncelleyicinin (updater) kendi attığı anlamlı iletiler (ör. "Bir klasör kendi
  * alt klasörüne taşınamaz.") korunur; yalnızca iletisi olmayan hatalar genel iletiyle değiştirilir.
  */
-export const asStorageError = (e: unknown, fallbackMessage = 'Beklenmeyen depolama hatası.'): StorageError => {
+export const asStorageError = (e: unknown, fallbackMessage = t('error.storageUnexpected')): StorageError => {
   if (e instanceof StorageError) return e;
   const message = e instanceof Error && e.message ? e.message : fallbackMessage;
   return new StorageError(message, e);
@@ -49,7 +51,7 @@ export async function readKey<T>(key: string, fallback: T): Promise<T> {
     const result = await chrome.storage.local.get(key);
     return (result[key] as T | undefined) ?? fallback;
   } catch (e) {
-    throw new StorageError(`"${key}" okunamadı.`, e);
+    throw new StorageError(t('error.readKey', { key }), e);
   }
 }
 
@@ -65,7 +67,7 @@ export function updateKey<T>(key: string, fallback: T, updater: (current: T) => 
     try {
       await chrome.storage.local.set({ [key]: next });
     } catch (e) {
-      throw new StorageError(`"${key}" yazılamadı (depolama kotası dolmuş olabilir).`, e);
+      throw new StorageError(t('error.writeKey', { key }), e);
     }
     return next;
   });

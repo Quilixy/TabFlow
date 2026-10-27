@@ -1,4 +1,5 @@
 import type { SavedTab, Workspace } from '../types';
+import { t } from '../i18n';
 
 /** Çöp kutusundaki öğeler bu süre sonra kendiliğinden silinir. */
 export const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -56,10 +57,10 @@ export function normalizeTrash(raw: unknown): TrashEntry[] {
 
 /** Listede gösterilecek kısa özet. */
 export function describeTrashEntry(entry: TrashEntry): { title: string; detail: string } {
-  if (entry.kind === 'tab') return { title: entry.tab.title, detail: `Sekme · “${entry.folderName}” klasöründen` };
+  if (entry.kind === 'tab') return { title: entry.tab.title, detail: t('trash.tabFrom', { folder: entry.folderName }) };
   const [root, ...rest] = entry.folders;
   const tabs = entry.folders.reduce((sum, f) => sum + f.tabs.length, 0);
-  const parts = [`${tabs} sekme`];
-  if (rest.length > 0) parts.push(`${rest.length} alt klasör`);
-  return { title: root?.name ?? 'Klasör', detail: `Klasör · ${parts.join(' · ')}` };
+  const parts = [t('count.tabs', { n: tabs })];
+  if (rest.length > 0) parts.push(t('count.subfolders', { n: rest.length }));
+  return { title: root?.name ?? t('trash.folderFallback'), detail: t('trash.folderDetail', { parts: parts.join(' · ') }) };
 }

@@ -1,6 +1,7 @@
 import type { SavedTab, Workspace, WorkspaceMap } from '../types';
 import { isHttpUrl } from './url';
 import { normalizeWorkspaces } from './workspaceTree';
+import { t } from '../i18n';
 
 export const BACKUP_APP = 'TabFlow';
 export const BACKUP_SCHEMA_VERSION = 2;
@@ -61,12 +62,12 @@ export function parseBackup(text: string, now: number = Date.now()): ParsedBacku
   try {
     data = JSON.parse(text);
   } catch {
-    throw new Error('Dosya geçerli bir JSON değil.');
+    throw new Error(t('backup.err.json'));
   }
-  if (!isRecord(data)) throw new Error('Yedek dosyası tanınmadı.');
+  if (!isRecord(data)) throw new Error(t('backup.err.unknown'));
 
   if (typeof data.schemaVersion === 'number' && data.schemaVersion > BACKUP_SCHEMA_VERSION) {
-    throw new Error('Bu yedek daha yeni bir TabFlow sürümüyle alınmış; önce eklentiyi güncelle.');
+    throw new Error(t('backup.err.newer'));
   }
 
   const rawMap = isRecord(data.workspaces) ? data.workspaces : data;
@@ -92,7 +93,7 @@ export function parseBackup(text: string, now: number = Date.now()): ParsedBacku
   }
 
   const workspaces = normalizeWorkspaces(cleaned);
-  if (Object.keys(workspaces).length === 0) throw new Error('Yedek dosyasında klasör bulunamadı.');
+  if (Object.keys(workspaces).length === 0) throw new Error(t('backup.err.empty'));
   return { workspaces, skippedFolders, skippedTabs };
 }
 

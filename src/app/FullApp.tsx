@@ -29,6 +29,7 @@ import type { DropPlacement } from '../utils/workspaceOps';
 import { LEAVE_ANIMATION_MS } from '../utils/theme';
 import { NAVIGATE_KEY, parseNavigateRequest } from '../utils/uiSync';
 import { canReparent, collectSubtree, countTabs, getPath, pathLabel } from '../utils/workspaceTree';
+import { t } from '../i18n';
 
 const SAVE_ACTION = '__save__';
 const CREATE_ACTION = '__create__';
@@ -205,7 +206,7 @@ export default function FullApp() {
     expandMany(getPath(workspaces, id).map((w) => w.id));
   }, [workspaces, selectedFolderId, expandMany]);
 
-  const nameOf = useCallback((id: string) => workspaces[id]?.name ?? 'klasör', [workspaces]);
+  const nameOf = useCallback((id: string) => workspaces[id]?.name ?? t('common.folderFallback'), [workspaces]);
 
   // ---- Klasör oluşturma ----------------------------------------------------------
   const handleComposerSubmit = useCallback(
@@ -223,7 +224,7 @@ export default function FullApp() {
         const created = await createFolder(name, composer.parentId);
         markEntering([created.id]);
         emitFolderBurst(created.id);
-        showToast(`“${created.name}” klasörü oluşturuldu.`);
+        showToast(t('app.folderCreated', { name: created.name }));
         if (composer.parentId !== null) expandMany([composer.parentId]);
       });
     },
@@ -248,21 +249,21 @@ export default function FullApp() {
   const handleDropOpenTab = useCallback(
     (folderId: string | null, tab: OpenTab, closeOriginal: boolean, position?: Point) => {
       if (folderId === null) {
-        showToast('Sekmeyi eklemek için önce bir klasör seç.');
+        showToast(t('app.selectFolderFirst'));
         return;
       }
       void run(`drop:${folderId}:${tab.id}`, async () => {
         // Bırakılan veri başka bir sayfadan gelmiş olabilir: sekmeyi tarayıcıdan yeniden oku.
         const real = await resolveOpenTabById(tab.id);
-        if (!real) throw new Error('Sekme bulunamadı ya da kaydedilemiyor (yalnızca web sayfaları kaydedilir).');
+        if (!real) throw new Error(t('error.droppedTab'));
         const { added, closeFailed } = await addOpenTab(folderId, real, closeOriginal, position);
         if (added) emitFolderBurst(folderId);
         showToast(
           !added
-            ? `Bu sayfa “${nameOf(folderId)}” klasöründe zaten var.`
+            ? t('app.alreadyInFolder', { folder: nameOf(folderId) })
             : closeFailed
-              ? `Sekme “${nameOf(folderId)}” klasörüne eklendi, ancak kapatılamadı.`
-              : `Sekme “${nameOf(folderId)}” klasörüne ${closeOriginal ? 'taşındı' : 'kopyalandı'}.`,
+              ? t('app.addedNotClosed', { folder: nameOf(folderId) })
+              : t(closeOriginal ? 'app.tabMovedTo' : 'app.tabCopiedTo', { folder: nameOf(folderId) }),
         );
       });
     },
@@ -275,11 +276,11 @@ export default function FullApp() {
       void run(`move-tab:${tabId}`, async () => {
         const { status } = await moveTab(fromFolderId, tabId, toFolderId, { copy });
         if (status === 'duplicate') {
-          showToast(`Bu sayfa “${nameOf(toFolderId)}” klasöründe zaten var; ${copy ? 'kopyalanmadı' : 'taşınmadı'}.`);
+          showToast(t(copy ? 'app.duplicateNotCopied' : 'app.duplicateNotMoved', { folder: nameOf(toFolderId) }));
           return;
         }
         emitFolderBurst(toFolderId);
-        showToast(`Sekme “${nameOf(toFolderId)}” klasörüne ${copy ? 'kopyalandı' : 'taşındı'}.`);
+        showToast(t(copy ? 'app.tabCopiedTo' : 'app.tabMovedTo', { folder: nameOf(toFolderId) }));
       });
     },
     [run, moveTab, showToast, nameOf],
@@ -289,7 +290,7 @@ export default function FullApp() {
     (folderId: string, newParentId: string | null, position?: Point) => {
       if (folderId === newParentId) return;
       if (!canReparent(workspaces, folderId, newParentId)) {
-        showToast('Bir klasör kendi alt klasörüne taşınamaz.');
+        showToast(t('error.cycle'));
         return;
       }
       void run(`move-folder:${folderId}`, async () => {
@@ -297,8 +298,8 @@ export default function FullApp() {
         if (status !== 'moved') return; // aynı yerde kaldı ya da yalnızca tuvaldeki konumu değişti
         showToast(
           newParentId === null
-            ? `“${nameOf(folderId)}” köke taşındı.`
-            : `“${nameOf(folderId)}” → “${nameOf(newParentId)}” içine taşındı.`,
+            ? t('app.folderMovedRoot', { name: nameOf(folderId) })
+            : t('app.folderMovedInto', { name: nameOf(folderId), parent: nameOf(newParentId) }),
         );
         if (newParentId !== null) expandMany([newParentId]);
       });
@@ -319,7 +320,7 @@ export default function FullApp() {
       if (!folder) return;
       void run(`favorite:${id}`, async () => {
         await setFavorite(id, !folder.favorite);
-        showToast(folder.favorite ? `“${folder.name}” sabitlemesi kaldırıldı.` : `“${folder.name}” üste sabitlendi.`);
+        showToast(t(folder.favorite ? 'app.unpinned' : 'app.pinned', { name: folder.name }));
       });
     },
     [workspaces, run, setFavorite, showToast],
@@ -331,15 +332,17 @@ export default function FullApp() {
       void run('move-items', async () => {
         const r = await moveItems(currentId, tabIds, folderIds, toFolderId, copy);
         const moved = r.movedTabs + r.movedFolders;
-        const target = toFolderId === null ? 'köke' : `“${nameOf(toFolderId)}” klasörüne`;
         const notes: string[] = [];
-        if (r.duplicateTabs > 0) notes.push(`${r.duplicateTabs} sekme hedefte zaten vardı`);
-        if (r.skippedFolders > 0) notes.push(`${r.skippedFolders} klasör taşınamadı`);
-        const verb = copy && r.movedFolders === 0 ? 'kopyalandı' : 'taşındı';
+        if (r.duplicateTabs > 0) notes.push(t('app.bulk.duplicates', { n: r.duplicateTabs }));
+        if (r.skippedFolders > 0) notes.push(t('app.bulk.skippedFolders', { n: r.skippedFolders }));
+        const noteText = notes.length > 0 ? ` (${notes.join(', ')})` : '';
+        const copied = copy && r.movedFolders === 0;
         showToast(
           moved === 0
-            ? `Hiçbir öğe taşınmadı${notes.length > 0 ? ` (${notes.join(', ')})` : ''}.`
-            : `${moved} öğe ${target} ${verb}${notes.length > 0 ? ` (${notes.join(', ')})` : ''}.`,
+            ? t('app.bulk.nothing', { notes: noteText })
+            : toFolderId === null
+              ? t('app.bulk.movedRoot', { n: moved, notes: noteText })
+              : t(copied ? 'app.bulk.copiedTo' : 'app.bulk.movedTo', { n: moved, folder: nameOf(toFolderId), notes: noteText }),
         );
         if (moved > 0 && toFolderId !== null) emitFolderBurst(toFolderId);
       });
@@ -353,8 +356,8 @@ export default function FullApp() {
         const trashIds = await removeItems(currentId, tabIds, folderIds);
         if (trashIds.length === 0) return;
         if (folderIds.some((id) => getPath(workspaces, currentId).some((w) => w.id === id))) setSelectedFolder(null);
-        showToast(`${tabIds.length + folderIds.length} öğe çöp kutusuna taşındı.`, {
-          label: 'Geri al',
+        showToast(t('app.bulk.trashed', { n: tabIds.length + folderIds.length }), {
+          label: t('common.undo'),
           run: () => void run('undo-delete-items', () => restoreManyFromTrash(trashIds)),
         });
       });
@@ -386,8 +389,8 @@ export default function FullApp() {
       const parentId = currentId;
       void run('arrange', async () => {
         await applyLayout(parentId, positions);
-        showToast('Öğeler ızgaraya dizildi.', {
-          label: 'Geri al',
+        showToast(t('app.arranged'), {
+          label: t('common.undo'),
           run: () => void run('undo-arrange', () => applyLayout(parentId, before)),
         });
       });
@@ -461,8 +464,8 @@ export default function FullApp() {
         if (folders.length === 0 || trashId === null) return;
         if (isInside) setSelectedFolder(folder.parentId);
         const extra = folders.length - 1;
-        showToast(`“${folder.name}”${extra > 0 ? ` ve ${extra} alt klasör` : ''} çöp kutusuna taşındı.`, {
-          label: 'Geri al',
+        showToast(extra > 0 ? t('app.folderTrashedWithSub', { name: folder.name, n: extra }) : t('app.folderTrashed', { name: folder.name }), {
+          label: t('common.undo'),
           run: () =>
             void run(`undo-delete:${id}`, async () => {
               await restoreFromTrash(trashId);
@@ -495,12 +498,12 @@ export default function FullApp() {
       void run(`restore:${id}`, async () => {
         if (total > RESTORE_CONFIRM_THRESHOLD) {
           const ok = await confirm({
-            title: `En fazla ${total} sekme açılacak`,
+            title: t('restoreConfirm.title', { n: total }),
             message:
               mode === 'window'
-                ? 'Hepsi yeni bir pencerede açılır. Devam edilsin mi?'
-                : 'Bu pencerede zaten açık olanlar atlanır. Devam edilsin mi?',
-            confirmLabel: 'Sekmeleri aç',
+                ? t('restoreConfirm.window')
+                : t('restoreConfirm.tabs'),
+            confirmLabel: t('restoreConfirm.action'),
           });
           if (!ok) return;
         }
@@ -517,8 +520,8 @@ export default function FullApp() {
       void run(`remove-tab:${tabId}`, async () => {
         const removed = await removeTab(folderId, tabId);
         if (!removed) return;
-        showToast('Sekme çöp kutusuna taşındı.', {
-          label: 'Geri al',
+        showToast(t('app.tabTrashed'), {
+          label: t('common.undo'),
           run: () => void run(`undo-remove-tab:${tabId}`, () => restoreFromTrash(removed.trashId)),
         });
       });
@@ -531,7 +534,7 @@ export default function FullApp() {
     (entryId: string) => {
       void run(`trash-restore:${entryId}`, async () => {
         const restored = await restoreFromTrash(entryId);
-        showToast(restored ? 'Geri yüklendi.' : 'Bu öğe artık çöp kutusunda değil.');
+        showToast(restored ? t('app.restored') : t('app.notInTrash'));
       });
     },
     [run, restoreFromTrash, showToast],
@@ -547,7 +550,7 @@ export default function FullApp() {
   const handleTrashEmpty = useCallback(() => {
     void run('trash-empty', async () => {
       await emptyTrash();
-      showToast('Çöp kutusu boşaltıldı.');
+      showToast(t('app.trashEmptied'));
     });
   }, [run, emptyTrash, showToast]);
 
@@ -555,37 +558,35 @@ export default function FullApp() {
   const handleExport = useCallback(() => {
     void run('export', async () => {
       const count = Object.keys(workspaces).length;
-      if (count === 0) throw new Error('Yedeklenecek klasör yok.');
+      if (count === 0) throw new Error(t('app.nothingToBackup'));
       downloadTextFile(backupFileName(), serializeBackup(createBackup(workspaces)));
       setLastBackupAt(Date.now());
-      showToast(`${count} klasör yedeklendi.`);
+      showToast(t('app.backedUp', { n: count }));
     });
   }, [workspaces, run, setLastBackupAt, showToast]);
 
   const handleImportFile = useCallback(
     (file: File) => {
       void run('import', async () => {
-        if (file.size > MAX_BACKUP_BYTES) throw new Error('Dosya çok büyük (en fazla 50 MB).');
+        if (file.size > MAX_BACKUP_BYTES) throw new Error(t('app.fileTooLarge'));
         const parsed = parseBackup(await file.text());
         const incoming = Object.values(parsed.workspaces);
         const skipped = parsed.skippedFolders + parsed.skippedTabs;
         const ok = await confirm({
-          title: `${incoming.length} klasör, ${countTabs(incoming)} sekme içe aktarılsın mı?`,
+          title: t('app.import.title', { folders: incoming.length, tabs: countTabs(incoming) }),
           message:
-            'Mevcut verilerin silinmez. Aynı klasör iki yerde varsa adı ve konumu daha yeni olandan alınır, ' +
-            'sekmeleri birleştirilir.' +
-            (skipped > 0 ? `\n${skipped} geçersiz öğe atlanacak.` : ''),
-          confirmLabel: 'İçe aktar',
+            t('app.import.message') + (skipped > 0 ? `\n${t('app.import.skipped', { n: skipped })}` : ''),
+          confirmLabel: t('app.import.action'),
         });
         if (!ok) return;
 
         const { undo, stats } = await importWorkspaces(parsed.workspaces);
         if (stats.added + stats.updated === 0) {
-          showToast('Yedekteki her şey zaten mevcut; değişiklik yapılmadı.');
+          showToast(t('app.import.nothing'));
           return;
         }
-        showToast(`İçe aktarıldı: ${stats.added} yeni, ${stats.updated} güncellenen klasör.`, {
-          label: 'Geri al',
+        showToast(t('app.import.done', { added: stats.added, updated: stats.updated }), {
+          label: t('common.undo'),
           run: () => void run('undo-import', () => revertImport(undo)),
         });
       });
@@ -597,17 +598,16 @@ export default function FullApp() {
     (snapshot: Snapshot) => {
       void run('restore-snapshot', async () => {
         const ok = await confirm({
-          title: `${formatDateTime(snapshot.takenAt)} yedeğine dönülsün mü?`,
+          title: t('app.snapshot.title', { date: formatDateTime(snapshot.takenAt) }),
           message:
-            `Tüm klasörler bu yedekteki hale döner (${snapshot.folderCount} klasör, ${snapshot.tabCount} sekme).\n` +
-            'Şimdiki halin de otomatik yedeklere eklenir; istersen oradan geri dönebilirsin.',
-          confirmLabel: 'Yedeğe dön',
+            t('app.snapshot.message', { folders: snapshot.folderCount, tabs: snapshot.tabCount }),
+          confirmLabel: t('app.snapshot.action'),
           danger: true,
         });
         if (!ok) return;
         await restoreSnapshot(snapshot.takenAt);
         setSelectedFolder(null);
-        showToast(`${formatDateTime(snapshot.takenAt)} yedeğine dönüldü.`);
+        showToast(t('app.snapshot.done', { date: formatDateTime(snapshot.takenAt) }));
       });
     },
     [run, confirm, restoreSnapshot, setSelectedFolder, showToast],
@@ -617,17 +617,17 @@ export default function FullApp() {
     const rect = e.currentTarget.getBoundingClientRect();
     const show = (snapshots: Snapshot[]) =>
       openBackupMenuAt(rect.right, rect.bottom + 4, [
-        { type: 'heading', label: lastBackupAt ? `Son yedek: ${formatAgo(lastBackupAt)}` : 'Henüz yedek alınmadı' },
-        { label: 'Yedeği indir (JSON)', onSelect: handleExport },
-        { label: 'Yedekten içe aktar…', onSelect: () => fileInputRef.current?.click() },
+        { type: 'heading', label: lastBackupAt ? t('backupMenu.last', { ago: formatAgo(lastBackupAt) }) : t('backupMenu.never') },
+        { label: t('backupMenu.download'), onSelect: handleExport },
+        { label: t('backupMenu.import'), onSelect: () => fileInputRef.current?.click() },
         { type: 'separator' },
-        { type: 'heading', label: 'Otomatik yedekler (günde bir, son 7)' },
+        { type: 'heading', label: t('backupMenu.autoHeading') },
         ...(snapshots.length === 0
-          ? [{ label: 'Henüz otomatik yedek yok', onSelect: () => undefined, disabled: true }]
+          ? [{ label: t('backupMenu.autoNone'), onSelect: () => undefined, disabled: true }]
           : snapshots.map((s) => ({
-              label: `${formatDateTime(s.takenAt)} · ${s.folderCount} klasör, ${s.tabCount} sekme${
-                s.reason === 'before-restore' ? ' (dönüşten önce)' : ''
-              }`,
+              label:
+                t('backupMenu.autoItem', { date: formatDateTime(s.takenAt), folders: s.folderCount, tabs: s.tabCount }) +
+                (s.reason === 'before-restore' ? t('backupMenu.beforeRestore') : ''),
               onSelect: () => handleRestoreSnapshot(s),
               disabled: isBusy,
             }))),
@@ -640,7 +640,7 @@ export default function FullApp() {
     (tab: SavedTab) => {
       void run(`open-tab:${tab.id}`, async () => {
         const status = await openTab(tab);
-        showToast(status === 'opened' ? 'Sekme arka planda açıldı.' : 'Bu sayfa zaten açık.');
+        showToast(status === 'opened' ? t('tab.openedBackground') : t('tab.alreadyOpen'));
       });
     },
     [run, openTab, showToast],
@@ -674,20 +674,20 @@ export default function FullApp() {
         <div className="ml-auto flex items-center gap-2">
           <Button size="sm" onClick={() => setComposer({ mode: 'empty', parentId: currentId })} disabled={isBusy}>
             <PlusIcon />
-            {currentId ? 'Yeni alt klasör' : 'Yeni klasör'}
+            {currentId ? t('app.newSubfolder') : t('app.newFolder')}
           </Button>
           <Button variant="secondary" size="sm" onClick={() => setShowOpenTabs((v) => !v)} aria-pressed={showOpenTabs}>
-            Açık sekmeler
+            {t('app.openTabs')}
           </Button>
           <Button
             variant="secondary"
             size="sm"
             className="relative"
             onClick={openBackupMenu}
-            title={needsBackup ? 'Uzun süredir yedek almadın' : 'Yedekle / içe aktar'}
+            title={needsBackup ? t('app.backupStale') : t('app.backupTitle')}
           >
             <ArchiveIcon />
-            Yedek
+            {t('app.backup')}
             {needsBackup && (
               <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-amber-500" aria-hidden="true" />
             )}
@@ -708,8 +708,8 @@ export default function FullApp() {
             variant="secondary"
             size="sm"
             onClick={() => setShowTrash(true)}
-            title="Silinen klasör ve sekmeler"
-            aria-label={`Çöp kutusu${trash.length > 0 ? ` (${trash.length} öğe)` : ''}`}
+            title={t('trash.buttonTitle')}
+            aria-label={t('trash.buttonLabel', { n: trash.length })}
           >
             <TrashIcon />
             {trash.length > 0 && <span className="tabular-nums">{trash.length}</span>}
@@ -743,13 +743,13 @@ export default function FullApp() {
 
         <main className="flex min-w-0 flex-1 flex-col">
           <div className="flex shrink-0 items-center gap-1 border-b border-gray-200 bg-white px-3 py-1.5 text-sm">
-            <nav aria-label="Konum" className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+            <nav aria-label={t('app.breadcrumb')} className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
               <button
                 type="button"
                 onClick={() => navigate(null)}
                 className="shrink-0 rounded px-1.5 py-1 text-gray-600 hover:bg-gray-100"
               >
-                Tümü
+                {t('common.all')}
               </button>
               {breadcrumb.map((w, i) => (
                 <span key={w.id} className="flex shrink-0 items-center gap-1">
@@ -775,7 +775,7 @@ export default function FullApp() {
                 aria-haspopup="menu"
               >
                 <ExternalLinkIcon />
-                Sekmeleri aç
+                {t('app.openFolderTabs')}
                 <ChevronDownIcon width={12} height={12} className="-mr-0.5 text-gray-500" />
               </Button>
             )}
@@ -804,7 +804,7 @@ export default function FullApp() {
 
           <div className="min-h-0 flex-1">
             {isLoading ? (
-              <p className="p-6 text-sm text-gray-500">Yükleniyor…</p>
+              <p className="p-6 text-sm text-gray-500">{t('common.loading')}</p>
             ) : (
               <Canvas
                 key={currentId ?? '__root__'}

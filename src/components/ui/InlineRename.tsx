@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { t } from '../../i18n';
 
 interface InlineRenameProps {
   initialValue: string;
@@ -37,7 +38,7 @@ export function InlineRename({ initialValue, onCommit, onCancel, className = '' 
       type="text"
       value={draft}
       maxLength={60}
-      aria-label="Klasör adı"
+      aria-label={t('folder.nameLabel')}
       onChange={(e) => setDraft(e.target.value)}
       onFocus={() => {
         focusedRef.current = true;

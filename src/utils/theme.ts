@@ -1,3 +1,5 @@
+import type { MessageKey } from '../i18n';
+
 export const THEME_MODES = ['system', 'light', 'dark'] as const;
 export type ThemeMode = (typeof THEME_MODES)[number];
 
@@ -5,7 +7,8 @@ export type ThemeMode = (typeof THEME_MODES)[number];
 export const THEME_PACKS = ['default', 'sakura', 'space'] as const;
 export type ThemePack = (typeof THEME_PACKS)[number];
 
-export const PACK_LABELS: Record<ThemePack, string> = { default: 'Varsayılan', sakura: 'Sakura', space: 'Uzay' };
+/** Etiketler mesaj anahtarıdır (gösterirken t() ile çevrilir). */
+export const PACK_LABELS: Record<ThemePack, MessageKey> = { default: 'pack.default', sakura: 'pack.sakura', space: 'pack.space' };
 /** Menüdeki küçük renk örnekleri. */
 export const PACK_SWATCH: Record<ThemePack, readonly [string, string]> = {
   default: ['#6366f1', '#e0e7ff'],
@@ -19,20 +22,24 @@ export type AccentId = (typeof ACCENT_IDS)[number];
 export const ANIMATION_STYLES = ['none', 'pop', 'fade', 'slide'] as const;
 export type AnimationStyle = (typeof ANIMATION_STYLES)[number];
 
-export const THEME_LABELS: Record<ThemeMode, string> = { system: 'Sistem', light: 'Açık', dark: 'Koyu' };
-export const ANIMATION_LABELS: Record<AnimationStyle, string> = {
-  none: 'Yok',
-  pop: 'Büyüme',
-  fade: 'Solma',
-  slide: 'Kayma',
+export const THEME_LABELS: Record<ThemeMode, MessageKey> = {
+  system: 'theme.mode.system',
+  light: 'theme.mode.light',
+  dark: 'theme.mode.dark',
 };
-export const ACCENT_LABELS: Record<AccentId, string> = {
-  indigo: 'İndigo',
-  emerald: 'Zümrüt',
-  rose: 'Gül',
-  sky: 'Gök mavisi',
-  violet: 'Menekşe',
-  amber: 'Kehribar',
+export const ANIMATION_LABELS: Record<AnimationStyle, MessageKey> = {
+  none: 'anim.none',
+  pop: 'anim.pop',
+  fade: 'anim.fade',
+  slide: 'anim.slide',
+};
+export const ACCENT_LABELS: Record<AccentId, MessageKey> = {
+  indigo: 'accent.indigo',
+  emerald: 'accent.emerald',
+  rose: 'accent.rose',
+  sky: 'accent.sky',
+  violet: 'accent.violet',
+  amber: 'accent.amber',
 };
 export const ACCENT_SWATCH: Record<AccentId, string> = {
   indigo: '#6366f1',

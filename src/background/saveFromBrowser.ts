@@ -3,6 +3,7 @@ import { readKey } from '../storage/kv';
 import { readWorkspaceMap, updateWorkspaces } from '../storage/workspaceStore';
 import type { PageInfo, WorkspaceMap } from '../types';
 import { appendTab } from '../utils/workspaceOps';
+import { t } from '../i18n';
 
 const BADGE_MS = 2500;
 
@@ -38,14 +39,14 @@ export async function savePageToFolder(folderId: string, page: PageInfo, feedbac
     });
   } catch (e) {
     console.error('[TabFlow] sayfa kaydedilemedi.', e);
-    flashBadge(feedbackTabId, '!', '#dc2626', 'TabFlow: sayfa kaydedilemedi');
+    flashBadge(feedbackTabId, '!', '#dc2626', t('badge.failed'));
     return;
   }
   if (added) {
     await chrome.storage.local.set({ [LAST_FOLDER_KEY]: folderId }).catch(() => undefined);
-    flashBadge(feedbackTabId, '✓', '#16a34a', `TabFlow: “${folderName}” klasörüne kaydedildi`);
+    flashBadge(feedbackTabId, '✓', '#16a34a', t('badge.saved', { folder: folderName }));
   } else {
-    flashBadge(feedbackTabId, '=', '#64748b', `TabFlow: bu sayfa “${folderName}” klasöründe zaten var`);
+    flashBadge(feedbackTabId, '=', '#64748b', t('badge.duplicate', { folder: folderName }));
   }
 }
 

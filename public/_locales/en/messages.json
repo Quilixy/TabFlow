@@ -1,0 +1,18 @@
+{
+  "appName": {
+    "message": "TabFlow",
+    "description": "Extension name"
+  },
+  "appDescription": {
+    "message": "Save your tabs into folders and a free-form canvas, close them, and restore them in seconds.",
+    "description": "Store description"
+  },
+  "cmdOpenApp": {
+    "message": "Open TabFlow full screen",
+    "description": "Shortcut description"
+  },
+  "cmdSaveToLast": {
+    "message": "Save the active page to the last used folder",
+    "description": "Shortcut description"
+  }
+}

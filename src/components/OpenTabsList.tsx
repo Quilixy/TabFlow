@@ -8,6 +8,7 @@ import { Favicon } from './Favicon';
 import { ArchiveIcon, ChevronDownIcon, GripIcon, PinIcon, SearchIcon, XIcon } from './ui/icons';
 import { IconButton } from './ui/IconButton';
 import { folderTargets, type MenuEntry } from './ui/menu';
+import { t } from '../i18n';
 
 
 
@@ -111,18 +112,18 @@ export function OpenTabsList({
   };
 
   const buildMenu = (tab: OpenTab): MenuEntry[] => {
-    const entries: MenuEntry[] = [{ label: 'Sekmeye git', onSelect: () => onActivate(tab.id) }];
+    const entries: MenuEntry[] = [{ label: t('openTabs.goTo'), onSelect: () => onActivate(tab.id) }];
     if (folders.length === 0) {
-      entries.push({ label: 'Önce bir klasör oluştur', onSelect: () => undefined, disabled: true });
+      entries.push({ label: t('openTabs.createFirst'), onSelect: () => undefined, disabled: true });
     } else {
       entries.push(
-        { type: 'heading', label: 'Klasöre taşı (sekme kapanır)' },
+        { type: 'heading', label: t('openTabs.moveHeading') },
         ...folderTargets(folders, (f) => onAddToFolder(f.id, tab, true)),
-        { type: 'heading', label: 'Klasöre kopyala' },
+        { type: 'heading', label: t('openTabs.copyHeading') },
         ...folderTargets(folders, (f) => onAddToFolder(f.id, tab, false)),
       );
     }
-    entries.push({ type: 'separator' }, { label: 'Sekmeyi kapat', onSelect: () => onCloseTab(tab.id), danger: true });
+    entries.push({ type: 'separator' }, { label: t('openTabs.close'), onSelect: () => onCloseTab(tab.id), danger: true });
     return entries;
   };
 
@@ -133,7 +134,7 @@ export function OpenTabsList({
 
   return (
     <section
-      aria-label="Açık sekmeler"
+      aria-label={t('openTabs.title')}
       className={`flex min-h-0 flex-col rounded-lg border border-gray-200 bg-white ${className}`}
     >
       <header className="flex items-center gap-1 p-1.5">
@@ -144,13 +145,13 @@ export function OpenTabsList({
           className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 py-1.5 text-left hover:bg-gray-50"
         >
           <ChevronDownIcon className={`shrink-0 text-gray-500 transition ${isExpanded ? '' : '-rotate-90'}`} />
-          <span className="text-sm font-semibold text-gray-900">Açık sekmeler</span>
+          <span className="text-sm font-semibold text-gray-900">{t('openTabs.title')}</span>
           <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
             {visibleTabs.length}
           </span>
         </button>
         <IconButton
-          label="Açık sekmelerde ara"
+          label={t('openTabs.search')}
           aria-pressed={isSearchOpen}
           onClick={() => {
             if (isSearchOpen) setLocalQuery('');
@@ -161,7 +162,7 @@ export function OpenTabsList({
           <SearchIcon />
         </IconButton>
         <IconButton
-          label="Tüm sekmeleri bir klasöre kaydet ve kapat"
+          label={t('openTabs.saveAll')}
           onClick={onSaveAll}
           disabled={disabled || tabs.length === 0}
         >
@@ -175,8 +176,8 @@ export function OpenTabsList({
             type="text"
             value={localQuery}
             autoFocus
-            placeholder="Açık sekmelerde ara…"
-            aria-label="Açık sekmelerde ara"
+            placeholder={t('openTabs.searchPlaceholder')}
+            aria-label={t('openTabs.search')}
             onChange={(e) => setLocalQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
@@ -192,11 +193,11 @@ export function OpenTabsList({
       {isExpanded && (
         <>
           <p className="px-3 pb-1.5 text-xs text-gray-500">
-            Klasöre sürükle · Alt: kopyala · Sağ tık: menü
+            {t('openTabs.hint')}
           </p>
           {visibleTabs.length === 0 ? (
             <p className="px-3 pb-3 text-xs text-gray-500">
-              {q === '' ? 'Listelenecek açık sekme yok.' : 'Aramayla eşleşen açık sekme yok.'}
+              {q === '' ? t('openTabs.none') : t('openTabs.noMatch')}
             </p>
           ) : (
             <ul className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-1.5 pb-1.5">
@@ -224,7 +225,7 @@ export function OpenTabsList({
                     {tab.pinned && <PinIcon className="size-3.5 shrink-0 text-gray-500" />}
                   </button>
                   <IconButton
-                    label="Sekmeyi kapat"
+                    label={t('openTabs.close')}
                     onClick={() => onCloseTab(tab.id)}
                     className="opacity-0 group-focus-within:opacity-100 group-hover:opacity-100"
                   >

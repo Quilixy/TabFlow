@@ -22,6 +22,7 @@ import { IconButton } from '../ui/IconButton';
 import { InlineRename } from '../ui/InlineRename';
 import { restoreEntries, type MenuEntry } from '../ui/menu';
 import type { RestoreMode } from '../../utils/restore';
+import { t } from '../../i18n';
 
 const ROW_HEIGHT = 32;
 const OVERSCAN = 8;
@@ -141,7 +142,7 @@ export function FolderTree({
   const buildMenu = (workspace: Workspace, anchor: Point): MenuEntry[] => {
     const subtreeTabs = countTabs(collectSubtree(index, workspaces, workspace.id));
     const entries: MenuEntry[] = [
-      { label: 'Yeni alt klasör', onSelect: () => onNewFolder(workspace.id), disabled },
+      { label: t('composer.newSubfolder'), onSelect: () => onNewFolder(workspace.id), disabled },
       { type: 'separator' },
       ...restoreEntries(workspace.tabs.length, subtreeTabs, disabled, (recursive, mode) =>
         onRestore(workspace.id, recursive, mode),
@@ -150,13 +151,13 @@ export function FolderTree({
     entries.push(
       { type: 'separator' },
       {
-        label: workspace.favorite ? 'Sabitlemeyi kaldır' : 'Üste sabitle',
+        label: workspace.favorite ? t('folder.unpin') : t('folder.pin'),
         onSelect: () => onToggleFavorite(workspace.id),
         disabled,
       },
-      { label: 'Yeniden adlandır (F2)', onSelect: () => onRename(workspace.id), disabled },
-      { label: 'Renk ve simge…', onSelect: () => onStyle(workspace.id, anchor), disabled },
-      { label: 'Klasörü sil', onSelect: () => onDelete(workspace.id), danger: true, disabled },
+      { label: t('folder.rename'), onSelect: () => onRename(workspace.id), disabled },
+      { label: t('folder.style'), onSelect: () => onStyle(workspace.id, anchor), disabled },
+      { label: t('folder.delete'), onSelect: () => onDelete(workspace.id), danger: true, disabled },
     );
     return entries;
   };
@@ -340,7 +341,7 @@ export function FolderTree({
           <button
             type="button"
             tabIndex={-1}
-            aria-label={isOpen ? 'Daralt' : 'Genişlet'}
+            aria-label={isOpen ? t('tree.collapse') : t('tree.expand')}
             onClick={(e) => {
               e.stopPropagation();
               setExpanded(workspace.id, !isOpen);
@@ -364,7 +365,7 @@ export function FolderTree({
         ) : (
           <span
             className="min-w-0 flex-1 truncate"
-            title={`${workspace.name}\nÇift tık: yeniden adlandır`}
+            title={t('tree.rowTitle', { name: workspace.name })}
             onDoubleClick={(e) => {
               e.stopPropagation();
               if (!disabled) onRename(workspace.id);
@@ -374,11 +375,11 @@ export function FolderTree({
           </span>
         )}
         {workspace.favorite && (
-          <PinIcon width={12} height={12} className="shrink-0 text-gray-400" aria-label="Sabitlenmiş" role="img" />
+          <PinIcon width={12} height={12} className="shrink-0 text-gray-400" aria-label={t('folder.pinned')} role="img" />
         )}
         {workspace.tabs.length > 0 && <span className="shrink-0 text-xs text-gray-500">{workspace.tabs.length}</span>}
         <IconButton
-          label="Klasör işlemleri"
+          label={t('folder.actions')}
           tabIndex={-1} // Satırlar tek sekme durağı (roving tabindex); menü klavyeden Shift+F10 ile açılır
           onClick={(e) => {
             e.stopPropagation();
@@ -398,7 +399,7 @@ export function FolderTree({
   const totalCount = Object.keys(workspaces).length;
 
   return (
-    <nav aria-label="Klasör ağacı" className="flex h-full min-h-0 flex-col">
+    <nav aria-label={t('tree.label')} className="flex h-full min-h-0 flex-col">
       <div className="flex min-h-12 items-center gap-1 px-3 pt-3 pb-1.5">
         {isSearchOpen ? (
           <>
@@ -408,8 +409,8 @@ export function FolderTree({
                 type="text"
                 value={query}
                 autoFocus
-                placeholder="Klasör veya sekme ara…"
-                aria-label="Klasör veya sekme ara"
+                placeholder={t('search.placeholder')}
+                aria-label={t('search.label')}
                 onChange={(e) => onQueryChange(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') {
@@ -424,7 +425,7 @@ export function FolderTree({
               />
             </div>
             <IconButton
-              label="Aramayı kapat"
+              label={t('search.close')}
               // onMouseDown: input blur'undan önce çalışsın, arama kutusu kapanıp yer değiştirmesin
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
@@ -438,14 +439,14 @@ export function FolderTree({
         ) : (
           <>
             <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-              Klasörler
+              {t('common.folders')}
               <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">{totalCount}</span>
             </h2>
             <div className="ml-auto flex items-center">
-              <IconButton label="Ara" onClick={() => setIsSearchOpen(true)}>
+              <IconButton label={t('search.open')} onClick={() => setIsSearchOpen(true)}>
                 <SearchIcon />
               </IconButton>
-              <IconButton label="Yeni kök klasör" onClick={() => onNewFolder(null)} disabled={disabled}>
+              <IconButton label={t('tree.newRoot')} onClick={() => onNewFolder(null)} disabled={disabled}>
                 <PlusIcon />
               </IconButton>
             </div>
@@ -481,7 +482,7 @@ export function FolderTree({
         }`}
       >
         <HomeIcon className="shrink-0 text-gray-500" />
-        Tümü
+        {t('common.all')}
       </div>
 
       <div
@@ -491,10 +492,10 @@ export function FolderTree({
       >
         {rows.length === 0 ? (
           <p className="px-3 py-4 text-xs text-gray-500">
-            {q !== '' ? 'Aramayla eşleşen klasör yok.' : 'Henüz klasör yok.'}
+            {q !== '' ? t('tree.noMatch') : t('tree.empty')}
           </p>
         ) : (
-          <div role="tree" aria-label="Klasörler" style={{ height: rows.length * ROW_HEIGHT, position: 'relative' }}>
+          <div role="tree" aria-label={t('common.folders')} style={{ height: rows.length * ROW_HEIGHT, position: 'relative' }}>
             <div style={{ transform: `translateY(${start * ROW_HEIGHT}px)` }}>{visibleRows.map(renderRow)}</div>
           </div>
         )}

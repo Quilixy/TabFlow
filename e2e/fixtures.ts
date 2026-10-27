@@ -25,7 +25,9 @@ export const test = base.extend<Fixtures>({
   context: async ({}, use) => {
     const context = await chromium.launchPersistentContext('', {
       channel: 'chromium', // Yeni başsız kip eklentileri destekler
-      args: [`--disable-extensions-except=${EXTENSION_PATH}`, `--load-extension=${EXTENSION_PATH}`],
+      // Testler Türkçe arayüzü doğrular ("Otomatik" dil ayarı tarayıcının dilini izler).
+      locale: 'tr-TR',
+      args: [`--disable-extensions-except=${EXTENSION_PATH}`, `--load-extension=${EXTENSION_PATH}`, '--lang=tr-TR'],
     });
     await context.route(`${SITE}/**`, (route) => {
       const url = new URL(route.request().url());

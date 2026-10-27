@@ -1,3 +1,5 @@
+import type { MessageKey } from '../i18n';
+
 /** Klasör rengi: yalnızca bu kimlikler kabul edilir (dosyadan gelen veri güvenilmezdir). */
 export const FOLDER_COLORS = {
   gray: '#6b7280',
@@ -11,14 +13,15 @@ export const FOLDER_COLORS = {
 
 export type FolderColorId = keyof typeof FOLDER_COLORS;
 
-export const FOLDER_COLOR_LABELS: Record<FolderColorId, string> = {
-  gray: 'Gri',
-  red: 'Kırmızı',
-  amber: 'Turuncu',
-  emerald: 'Yeşil',
-  sky: 'Mavi',
-  violet: 'Mor',
-  rose: 'Pembe',
+/** Renk adlarının mesaj anahtarları (gösterirken t() ile çevrilir). */
+export const FOLDER_COLOR_LABELS: Record<FolderColorId, MessageKey> = {
+  gray: 'color.gray',
+  red: 'color.red',
+  amber: 'color.amber',
+  emerald: 'color.emerald',
+  sky: 'color.sky',
+  violet: 'color.violet',
+  rose: 'color.rose',
 };
 
 export const FOLDER_ICON_IDS = [
@@ -41,22 +44,23 @@ export const FOLDER_ICON_IDS = [
 
 export type FolderIconId = (typeof FOLDER_ICON_IDS)[number];
 
-export const FOLDER_ICON_LABELS: Record<FolderIconId, string> = {
-  folder: 'Klasör',
-  star: 'Yıldız',
-  heart: 'Kalp',
-  bookmark: 'Yer imi',
-  briefcase: 'İş',
-  book: 'Kitap',
-  code: 'Kod',
-  terminal: 'Terminal',
-  cart: 'Alışveriş',
-  music: 'Müzik',
-  globe: 'Web',
-  zap: 'Hızlı',
-  home: 'Ev',
-  rocket: 'Roket',
-  planet: 'Gezegen',
+/** Simge adlarının mesaj anahtarları (gösterirken t() ile çevrilir). */
+export const FOLDER_ICON_LABELS: Record<FolderIconId, MessageKey> = {
+  folder: 'icon.folder',
+  star: 'icon.star',
+  heart: 'icon.heart',
+  bookmark: 'icon.bookmark',
+  briefcase: 'icon.briefcase',
+  book: 'icon.book',
+  code: 'icon.code',
+  terminal: 'icon.terminal',
+  cart: 'icon.cart',
+  music: 'icon.music',
+  globe: 'icon.globe',
+  zap: 'icon.zap',
+  home: 'icon.home',
+  rocket: 'icon.rocket',
+  planet: 'icon.planet',
 };
 
 /** Renk seçilmediyse klasör, temanın vurgu rengini kullanır. */

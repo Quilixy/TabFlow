@@ -1,4 +1,5 @@
 import { XIcon } from './icons';
+import { t } from '../../i18n';
 
 interface ErrorBannerProps {
   message: string;
@@ -16,7 +17,7 @@ export function ErrorBanner({ message, onDismiss }: ErrorBannerProps) {
         <button
           type="button"
           onClick={onDismiss}
-          aria-label="Hatayı kapat"
+          aria-label={t('error.dismiss')}
           className="shrink-0 rounded p-0.5 text-red-600 hover:bg-red-100 hover:text-red-800"
         >
           <XIcon />

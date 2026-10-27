@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { AccentId, AnimationStyle, ThemeMode, ThemePack } from '../utils/theme';
 import { preserveForeignFields } from '../utils/uiSync';
+import { t } from '../i18n';
+import type { LanguageSetting } from '../i18n';
 
 /** Satır içi yeniden adlandırma alanının gösterileceği yer: aynı anda yalnızca biri açılır. */
 export type RenameSource = 'tree' | 'canvas';
@@ -25,6 +27,8 @@ interface UiState {
   decor: boolean;
   /** Klasör kartlarında alt klasörlerin içeriğini de göster. */
   deepPreview: boolean;
+  /** Arayüz dili ('auto': tarayıcının dili). */
+  language: LanguageSetting;
   // Oturumluk
   draftName: string;
   includePinned: boolean;
@@ -57,6 +61,7 @@ interface UiState {
   setPack: (value: ThemePack) => void;
   setDecor: (value: boolean) => void;
   setDeepPreview: (value: boolean) => void;
+  setLanguage: (value: LanguageSetting) => void;
   triggerBurst: (x: number, y: number) => void;
   markEntering: (ids: string[]) => void;
   setLeaving: (ids: string[], leaving: boolean) => void;
@@ -114,6 +119,7 @@ export const useUiStore = create<UiState>()(
       pack: 'default',
       decor: true,
       deepPreview: true,
+      language: 'auto',
       draftName: '',
       includePinned: false,
       closeOnAdd: false,
@@ -154,6 +160,7 @@ export const useUiStore = create<UiState>()(
       setPack: (pack) => set({ pack }),
       setDecor: (decor) => set({ decor }),
       setDeepPreview: (deepPreview) => set({ deepPreview }),
+      setLanguage: (language) => set({ language }),
       triggerBurst: (x, y) => {
         const key = ++burstSeq;
         set({ burst: { key, x, y } });
@@ -203,6 +210,7 @@ export const useUiStore = create<UiState>()(
         pack: s.pack,
         decor: s.decor,
         deepPreview: s.deepPreview,
+        language: s.language,
       }),
     },
   ),
@@ -210,5 +218,5 @@ export const useUiStore = create<UiState>()(
 
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) return error.message;
-  return 'Beklenmeyen bir hata oluştu.';
+  return t('common.unexpectedError');
 }

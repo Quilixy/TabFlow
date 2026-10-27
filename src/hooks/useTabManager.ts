@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import type { PageInfo } from '../types';
 import { toOpenTab, type OpenTab } from '../utils/tabs';
+import { t } from '../i18n';
 
 export { resolveRestorableUrl, toOpenTab, type OpenTab } from '../utils/tabs';
 export { EAGER_TAB_LIMIT } from '../services/restoreService';
@@ -18,7 +19,7 @@ const LANDING_URL = 'chrome://newtab/';
 
 async function getCurrentWindowId(): Promise<number> {
   const win = await chrome.windows.getCurrent();
-  if (win.id === undefined) throw new Error('Aktif pencere bulunamadı.');
+  if (win.id === undefined) throw new Error(t('error.noActiveWindow'));
   return win.id;
 }
 
@@ -74,7 +75,7 @@ export async function queryActiveTab(): Promise<OpenTab> {
   const windowId = await getCurrentWindowId();
   const [tab] = await chrome.tabs.query({ active: true, windowId });
   const openTab = tab ? toOpenTab(tab) : null;
-  if (!openTab) throw new Error('Bu sayfa kaydedilemez (yalnızca web sayfaları kaydedilir).');
+  if (!openTab) throw new Error(t('error.pageNotSaveable'));
   return openTab;
 }
 
@@ -93,7 +94,7 @@ export function useTabManager() {
   /** Aktif penceredeki geri yüklenebilir sekmeleri döndürür. */
   const getOpenTabs = useCallback(
     (options?: { includePinned?: boolean }) =>
-      run('Açık sekmeler okunamadı.', () => queryOpenTabsDetailed(options)),
+      run(t('error.readTabs'), () => queryOpenTabsDetailed(options)),
     [run],
   );
 
@@ -103,7 +104,7 @@ export function useTabManager() {
    */
   const closeTabs = useCallback(
     (tabIds: number[]) =>
-      run('Sekmeler kapatılamadı.', async () => {
+      run(t('error.closeTabs'), async () => {
         if (tabIds.length === 0) return 0;
         const windowId = await getCurrentWindowId();
         const closing = new Set(tabIds);
@@ -127,7 +128,7 @@ export function useTabManager() {
   /** Tek bir sekmeyi popup'ı kapatmadan arka planda açar. */
   const openSingleTab = useCallback(
     (tab: PageInfo) =>
-      run('Sekme açılamadı.', async () => {
+      run(t('error.openTab'), async () => {
         const windowId = await getCurrentWindowId();
         await chrome.tabs.create({
           windowId,
@@ -141,7 +142,7 @@ export function useTabManager() {
 
   const activateTab = useCallback(
     (tabId: number) =>
-      run('Sekme etkinleştirilemedi.', async () => {
+      run(t('error.activateTab'), async () => {
         await chrome.tabs.update(tabId, { active: true });
       }),
     [run],

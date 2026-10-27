@@ -1,5 +1,6 @@
 import type { FolderRef } from '../../types';
 import type { RestoreMode } from '../../utils/restore';
+import { t } from '../../i18n';
 
 export type MenuEntry =
   | { type?: 'item'; label: string; onSelect: () => void; danger?: boolean; disabled?: boolean }
@@ -29,15 +30,15 @@ export function restoreEntries(
 ): MenuEntry[] {
   const nested = subtreeTabs > ownTabs;
   const entries: MenuEntry[] = [
-    { label: `Sekmeleri aç (${ownTabs})`, onSelect: () => onRestore(false, 'tabs'), disabled: disabled || ownTabs === 0 },
+    { label: t('restoreMenu.own', { n: ownTabs }), onSelect: () => onRestore(false, 'tabs'), disabled: disabled || ownTabs === 0 },
   ];
   if (nested) {
-    entries.push({ label: `Alt klasörlerle birlikte aç (${subtreeTabs})`, onSelect: () => onRestore(true, 'tabs'), disabled });
+    entries.push({ label: t('restoreMenu.withSubfolders', { n: subtreeTabs }), onSelect: () => onRestore(true, 'tabs'), disabled });
   }
   const all = disabled || subtreeTabs === 0;
   entries.push(
-    { label: 'Sekme grubu olarak aç', onSelect: () => onRestore(nested, 'group'), disabled: all },
-    { label: 'Yeni pencerede aç', onSelect: () => onRestore(nested, 'window'), disabled: all },
+    { label: t('restoreMenu.group'), onSelect: () => onRestore(nested, 'group'), disabled: all },
+    { label: t('restoreMenu.window'), onSelect: () => onRestore(nested, 'window'), disabled: all },
   );
   return entries;
 }

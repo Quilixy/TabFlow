@@ -11,6 +11,7 @@ import { FolderGlyph } from '../ui/FolderGlyph';
 import { MoreIcon } from '../ui/icons';
 import { IconButton } from '../ui/IconButton';
 import { InlineRename } from '../ui/InlineRename';
+import { t } from '../../i18n';
 
 const INDENT_PX = 14;
 
@@ -89,7 +90,11 @@ export const FolderCard = memo(function FolderCard({ folder, childCount, rows, x
       data-decor-variant={decor.variant}
       tabIndex={0}
       role="button"
-      aria-label={`${folder.name} klasörü, ${folder.tabs.length} sekme${childCount > 0 ? `, ${childCount} alt klasör` : ''}`}
+      aria-label={t('card.folderLabel', {
+        name: folder.name,
+        tabs: t('count.tabs', { n: folder.tabs.length }),
+        sub: childCount > 0 ? `, ${t('count.subfolders', { n: childCount })}` : '',
+      })}
       style={{ left: x, top: y, width: FOLDER_CARD_W }}
       onPointerDown={(e) => onPointerDown(e, folder.id, x, y)}
       onPointerMove={onPointerMove}
@@ -106,7 +111,7 @@ export const FolderCard = memo(function FolderCard({ folder, childCount, rows, x
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      title={`${folder.name}\nÇift tık: klasöre git · F2: yeniden adlandır`}
+      title={t('card.folderTitle', { name: folder.name })}
       className={`group absolute rounded-2xl border p-3 outline-none select-none transition duration-200 ease-out focus-visible:ring-2 focus-visible:ring-indigo-500 ${
         highlighted 
           ? 'border-gray-900 bg-gray-50 ring-1 ring-gray-900 shadow-md' 
@@ -131,18 +136,19 @@ export const FolderCard = memo(function FolderCard({ folder, childCount, rows, x
             <p className="line-clamp-2 text-sm leading-snug font-semibold tracking-tight text-gray-900">{folder.name}</p>
           )}
           <p className="mt-0.5 truncate text-[11px] font-medium text-gray-400">
-            {folder.tabs.length} sekme{childCount > 0 ? ` · ${childCount} klasör` : ''}
+            {t('count.tabs', { n: folder.tabs.length })}
+            {childCount > 0 ? ` · ${t('count.folders', { n: childCount })}` : ''}
           </p>
         </div>
         <div data-no-drag className="-mt-1 -mr-1 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 transition-opacity">
-          <IconButton label="Klasör işlemleri" onClick={(e) => onMenuButton(e.currentTarget.getBoundingClientRect(), folder.id)}>
+          <IconButton label={t('folder.actions')} onClick={(e) => onMenuButton(e.currentTarget.getBoundingClientRect(), folder.id)}>
             <MoreIcon />
           </IconButton>
         </div>
       </div>
 
       <ul className="mt-3 space-y-1.5">
-        {rows.length === 0 && <li className="text-xs text-gray-400 italic">Boş klasör</li>}
+        {rows.length === 0 && <li className="text-xs text-gray-400 italic">{t('card.emptyFolder')}</li>}
         {rows.map((row) => {
           const indent = { paddingLeft: row.depth * INDENT_PX };
           if (row.kind === 'tab') {
@@ -166,7 +172,7 @@ export const FolderCard = memo(function FolderCard({ folder, childCount, rows, x
           }
           return (
             <li key={row.key} style={indent} className="text-[11px] font-medium text-gray-400">
-              +{row.count} daha
+              {t('card.more', { n: row.count })}
             </li>
           );
         })}

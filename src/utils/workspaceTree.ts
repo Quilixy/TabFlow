@@ -2,6 +2,7 @@ import type { FolderRef, Point, SavedTab, Workspace, WorkspaceMap } from '../typ
 import { isFolderColor, isFolderIcon } from './folderStyle';
 import { workspaceMatches } from './search';
 import { isHttpUrl } from './url';
+import { t } from '../i18n';
 
 /** Tuvaldaki bir hücre: klasör ve sekme kartları bu ızgaraya sığar. */
 export const CELL_W = 272;
@@ -71,7 +72,7 @@ export function normalizeWorkspaces(raw: unknown): WorkspaceMap {
     result[id] = {
       ...style,
       id,
-      name: typeof ws.name === 'string' && ws.name.trim() ? ws.name : 'Adsız klasör',
+      name: typeof ws.name === 'string' && ws.name.trim() ? ws.name : t('common.untitledFolder'),
       createdAt,
       updatedAt: isNum(ws.updatedAt) ? ws.updatedAt : createdAt,
       parentId,

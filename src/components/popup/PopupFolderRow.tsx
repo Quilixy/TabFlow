@@ -6,6 +6,7 @@ import { Button } from '../ui/Button';
 import { FolderGlyph } from '../ui/FolderGlyph';
 import { CheckIcon, ChevronDownIcon, ExternalLinkIcon, PinIcon, PlusIcon } from '../ui/icons';
 import { IconButton } from '../ui/IconButton';
+import { t } from '../../i18n';
 
 const COLLAPSED_FAVICONS = 4;
 const EXPANDED_TAB_LIMIT = 30;
@@ -71,9 +72,9 @@ export function PopupFolderRow({
   const isExpandable = tabs.length > 0 || childCount > 0;
   const accent = folderColorCss(workspace.color);
 
-  const meta = [`${tabs.length} sekme`];
-  if (childCount > 0) meta.push(`${childCount} alt klasör`);
-  if (matchingTabs && matchingTabs.length > 0) meta.push(`${matchingTabs.length} eşleşme`);
+  const meta = [t('count.tabs', { n: tabs.length })];
+  if (childCount > 0) meta.push(t('count.subfolders', { n: childCount }));
+  if (matchingTabs && matchingTabs.length > 0) meta.push(t('count.matches', { n: matchingTabs.length }));
 
   return (
     <li className="relative" data-folder-row={workspace.id}>
@@ -100,7 +101,7 @@ export function PopupFolderRow({
           // Boş klasörde açılacak bir şey yok ama satır klavyeyle gezilebilsin diye devre dışı bırakılmaz.
           onClick={isExpandable ? onToggle : undefined}
           aria-disabled={isExpandable ? undefined : true}
-          title={isExpanded ? 'Sekmeleri gizle' : 'Sekmeleri göster'}
+          title={isExpanded ? t('popup.hideTabs') : t('popup.showTabs')}
           className="flex min-w-0 flex-1 items-center gap-1 rounded-md text-left focus-visible:outline-2 focus-visible:outline-indigo-600 aria-disabled:cursor-default"
         >
           <ChevronDownIcon
@@ -120,9 +121,9 @@ export function PopupFolderRow({
             <span className="flex items-center gap-1 text-sm font-medium text-gray-900" title={workspace.name}>
               <span className="truncate">{workspace.name}</span>
               {workspace.favorite && (
-                <PinIcon width={11} height={11} className="shrink-0 text-gray-400" aria-label="Sabitlenmiş" role="img" />
+                <PinIcon width={11} height={11} className="shrink-0 text-gray-400" aria-label={t('folder.pinned')} role="img" />
               )}
-              {parentName && <span className="sr-only">, “{parentName}” içinde</span>}
+              {parentName && <span className="sr-only">{t('popup.inParent', { parent: parentName })}</span>}
             </span>
             <span className="flex items-center gap-1.5 text-xs text-gray-500">
               <span className="truncate">{meta.join(' · ')}</span>
@@ -143,10 +144,10 @@ export function PopupFolderRow({
         <IconButton
           label={
             justAdded
-              ? 'Eklendi'
+              ? t('popup.added')
               : hasActivePage
-                ? `Bu sayfa “${workspace.name}” klasöründe zaten var`
-                : `Aktif sayfayı “${workspace.name}” klasörüne ekle`
+                ? t('popup.alreadyIn', { folder: workspace.name })
+                : t('popup.addActive', { folder: workspace.name })
           }
           onClick={onAdd}
           disabled={busy}
@@ -167,19 +168,19 @@ export function PopupFolderRow({
             size="sm"
             onClick={onOpenAll}
             disabled={busy || subtreeTabCount === 0}
-            title={tabs.length > 0 ? 'Klasördeki sekmeleri aç' : 'Alt klasörlerdeki sekmeleri aç'}
+            title={tabs.length > 0 ? t('popup.openTabsTitle') : t('popup.openNestedTitle')}
             className="rounded-r-none!"
           >
             <ExternalLinkIcon width={13} height={13} />
-            Aç
+            {t('common.open')}
           </Button>
           <button
             type="button"
             onClick={onOpenMenu}
             disabled={busy || subtreeTabCount === 0}
-            aria-label={`“${workspace.name}” açma seçenekleri`}
+            aria-label={t('popup.openOptions', { folder: workspace.name })}
             aria-haspopup="menu"
-            title="Açma seçenekleri: alt klasörlerle, sekme grubu, yeni pencere"
+            title={t('popup.openOptionsTitle')}
             className="inline-flex h-full items-center rounded-r-lg border-l border-gray-200 px-1 py-1.5 text-gray-500 hover:bg-gray-200 hover:text-gray-800 focus-visible:outline-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <ChevronDownIcon width={12} height={12} />
@@ -202,7 +203,7 @@ export function PopupFolderRow({
                   data-nav="tab"
                   onClick={() => onOpenTab(tab)}
                   disabled={busy}
-                  title={`${tab.title}\n${tab.url}\nTıkla: arka planda aç`}
+                  title={t('popup.tabTitle', { title: tab.title, url: tab.url })}
                   className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left hover:bg-gray-50 [&_img]:size-4 [&>span:first-child]:size-4"
                 >
                   <Favicon pageUrl={tab.url} fallbackUrl={tab.favIconUrl} title={tab.title} />
@@ -218,7 +219,7 @@ export function PopupFolderRow({
                   onClick={onShowMore}
                   className="w-full rounded-md px-2 py-1 text-left text-xs font-medium text-indigo-700 hover:bg-gray-50"
                 >
-                  +{listTabs.length - shownTabs.length} sekme daha · tam ekranda gör
+                  {t('popup.moreTabs', { n: listTabs.length - shownTabs.length })}
                 </button>
               </li>
             )}

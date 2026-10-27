@@ -1,0 +1,18 @@
+{
+  "appName": {
+    "message": "TabFlow",
+    "description": "Eklentinin adı"
+  },
+  "appDescription": {
+    "message": "Sekmelerini klasörlere ve serbest bir tuvale kaydet, kapat ve saniyeler içinde geri yükle.",
+    "description": "Mağaza açıklaması"
+  },
+  "cmdOpenApp": {
+    "message": "TabFlow’u tam ekranda aç",
+    "description": "Kısayol açıklaması"
+  },
+  "cmdSaveToLast": {
+    "message": "Aktif sayfayı son kullanılan klasöre kaydet",
+    "description": "Kısayol açıklaması"
+  }
+}

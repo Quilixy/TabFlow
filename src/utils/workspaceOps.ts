@@ -8,6 +8,7 @@ import {
   gridPosition,
   siblingItemCount,
 } from './workspaceTree';
+import { t } from '../i18n';
 
 /**
  * Klasör haritası üzerinde saf işlemler. Hem React kancası (useWorkspaces) hem service worker (sağ tık menüsü,
@@ -33,7 +34,7 @@ export function appendTab(
   position?: Point,
 ): { map: WorkspaceMap; added: boolean } {
   const target = map[folderId];
-  if (!target) throw new Error('Hedef klasör bulunamadı.');
+  if (!target) throw new Error(t('error.targetFolderMissing'));
   if (target.tabs.some((t) => t.url === page.url)) return { map, added: false };
   const pos = position ?? gridPosition(siblingItemCount(map, folderId));
   return {
@@ -90,10 +91,10 @@ export function reorderFolder(
 ): WorkspaceMap {
   const folder = map[folderId];
   const target = map[targetId];
-  if (!folder || !target) throw new Error('Klasör bulunamadı.');
+  if (!folder || !target) throw new Error(t('error.folderMissing'));
   if (folderId === targetId) return map;
   const parentId = target.parentId;
-  if (!canReparent(map, folderId, parentId)) throw new Error('Bir klasör kendi alt klasörüne taşınamaz.');
+  if (!canReparent(map, folderId, parentId)) throw new Error(t('error.cycle'));
   // Sabitlenmiş ve sabitlenmemiş klasörler ayrı gruplarda durur: hedefin grubuna katılır.
   const favorite = Boolean(target.favorite);
 

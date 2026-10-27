@@ -15,6 +15,9 @@ import {
 } from '../utils/theme';
 import { CheckIcon, MoonIcon, MonitorIcon, SlidersIcon, SunIcon } from './ui/icons';
 import { IconButton } from './ui/IconButton';
+import { LANGUAGE_SETTINGS, t, type LanguageSetting, type MessageKey } from '../i18n';
+
+const LANGUAGE_LABELS: Record<LanguageSetting, MessageKey> = { auto: 'lang.auto', tr: 'lang.tr', en: 'lang.en' };
 
 const THEME_ICONS: Record<ThemeMode, typeof SunIcon> = {
   system: MonitorIcon,
@@ -37,6 +40,8 @@ export function AppearanceMenu() {
   const setPack = useUiStore((s) => s.setPack);
   const decor = useUiStore((s) => s.decor);
   const setDecor = useUiStore((s) => s.setDecor);
+  const language = useUiStore((s) => s.language);
+  const setLanguage = useUiStore((s) => s.setLanguage);
   const isPack = pack !== 'default';
 
   useEffect(() => {
@@ -72,18 +77,18 @@ export function AppearanceMenu() {
         }
       }}
     >
-      <IconButton label="Görünüm" aria-expanded={isOpen} aria-haspopup="dialog" onClick={() => setIsOpen((v) => !v)}>
+      <IconButton label={t('appearance.button')} aria-expanded={isOpen} aria-haspopup="dialog" onClick={() => setIsOpen((v) => !v)}>
         <SlidersIcon />
       </IconButton>
 
       {isOpen && (
         <div
           role="dialog"
-          aria-label="Görünüm ayarları"
+          aria-label={t('appearance.dialog')}
           className="absolute top-full right-0 z-50 mt-2 w-72 space-y-4 rounded-lg border border-gray-200 bg-white p-3 shadow-lg"
         >
           <section>
-            <h3 className="mb-1.5 text-xs font-medium text-gray-500">Tema paketi</h3>
+            <h3 className="mb-1.5 text-xs font-medium text-gray-500">{t('appearance.pack')}</h3>
             <div className="grid grid-cols-3 gap-1 rounded-lg bg-gray-100 p-1">
               {THEME_PACKS.map((id) => (
                 <button
@@ -99,14 +104,14 @@ export function AppearanceMenu() {
                     <span className="size-3.5 rounded-full border border-gray-300" style={{ backgroundColor: PACK_SWATCH[id][0] }} />
                     <span className="-ml-1 size-3.5 rounded-full border border-gray-300" style={{ backgroundColor: PACK_SWATCH[id][1] }} />
                   </span>
-                  {PACK_LABELS[id]}
+                  {t(PACK_LABELS[id])}
                 </button>
               ))}
             </div>
             {isPack && (
               <>
                 <p className="mt-2 text-xs text-gray-500">
-                  “{PACK_LABELS[pack]}” temasının kendi vurgu rengi var; Açık/Koyu seçimin bu temada da geçerli.
+                  {t('appearance.packAccent', { pack: t(PACK_LABELS[pack]) })}
                 </p>
                 <label className="mt-2 flex items-start gap-2 text-sm text-gray-800">
                   <input
@@ -116,9 +121,9 @@ export function AppearanceMenu() {
                     className="mt-0.5 size-4 accent-indigo-600"
                   />
                   <span>
-                    Dekoratif efektler
+                    {t('appearance.decor')}
                     <span className="block text-xs text-gray-500">
-                      {pack === 'sakura' ? 'Düşen yapraklar, kart dalları, yaprak dağılması' : 'Yıldızlar, nebula, cam yüzeyler'}
+                      {pack === 'sakura' ? t('appearance.decorSakura') : t('appearance.decorSpace')}
                     </span>
                   </span>
                 </label>
@@ -127,7 +132,7 @@ export function AppearanceMenu() {
           </section>
 
           <section>
-            <h3 className="mb-1.5 text-xs font-medium text-gray-500">Tema</h3>
+            <h3 className="mb-1.5 text-xs font-medium text-gray-500">{t('appearance.theme')}</h3>
             <div className="grid grid-cols-3 gap-1 rounded-lg bg-gray-100 p-1">
               {THEME_MODES.map((mode) => {
                 const ThemeIcon = THEME_ICONS[mode];
@@ -143,7 +148,7 @@ export function AppearanceMenu() {
                     }`}
                   >
                     <ThemeIcon width={14} height={14} />
-                    {THEME_LABELS[mode]}
+                    {t(THEME_LABELS[mode])}
                   </button>
                 );
               })}
@@ -152,14 +157,14 @@ export function AppearanceMenu() {
 
           {!isPack && (
             <section>
-              <h3 className="mb-1.5 text-xs font-medium text-gray-500">Vurgu rengi</h3>
+              <h3 className="mb-1.5 text-xs font-medium text-gray-500">{t('appearance.accent')}</h3>
               <div className="flex flex-wrap gap-2">
                 {ACCENT_IDS.map((id) => (
                   <button
                     key={id}
                     type="button"
-                    title={ACCENT_LABELS[id]}
-                    aria-label={ACCENT_LABELS[id]}
+                    title={t(ACCENT_LABELS[id])}
+                    aria-label={t(ACCENT_LABELS[id])}
                     aria-pressed={accent === id}
                     onClick={() => setAccent(id)}
                     style={{ backgroundColor: ACCENT_SWATCH[id] }}
@@ -173,8 +178,8 @@ export function AppearanceMenu() {
           )}
 
           <section>
-            <h3 className="mb-1.5 text-xs font-medium text-gray-500">Klasör ekleme/silme animasyonu</h3>
-            <p className="mb-1.5 text-xs text-gray-500">“Yok” seçilirse temaların hareketli süsleri de durur.</p>
+            <h3 className="mb-1.5 text-xs font-medium text-gray-500">{t('appearance.animation')}</h3>
+            <p className="mb-1.5 text-xs text-gray-500">{t('appearance.animationNote')}</p>
             <div className="grid grid-cols-4 gap-1 rounded-lg bg-gray-100 p-1">
               {ANIMATION_STYLES.map((style) => (
                 <button
@@ -186,7 +191,27 @@ export function AppearanceMenu() {
                     animation === style ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  {ANIMATION_LABELS[style]}
+                  {t(ANIMATION_LABELS[style])}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <h3 className="mb-1.5 text-xs font-medium text-gray-500">{t('appearance.language')}</h3>
+            <div className="grid grid-cols-3 gap-1 rounded-lg bg-gray-100 p-1">
+              {LANGUAGE_SETTINGS.map((setting) => (
+                <button
+                  key={setting}
+                  type="button"
+                  lang={setting === 'auto' ? undefined : setting}
+                  aria-pressed={language === setting}
+                  onClick={() => setLanguage(setting)}
+                  className={`rounded-md px-1 py-1.5 text-xs font-medium focus-visible:outline-2 focus-visible:outline-indigo-600 ${
+                    language === setting ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  {t(LANGUAGE_LABELS[setting])}
                 </button>
               ))}
             </div>
