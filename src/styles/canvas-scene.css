@@ -1,17 +1,48 @@
-/* Tuval manzarası (yalnızca tam ekran uygulama). ÜRETİLMİŞ DOSYA: gömülü SVG'ler bir betikle üretildi; Sakura dalları src/assets'ten gelir. */
+/* Tuval manzarası (yalnızca tam ekran uygulama). ÜRETİLMİŞ DOSYA: gömülü SVG'ler bir betikle üretildi; Sakura dalları src/assets'teki parçalardan gelir. */
 
 /* ---- Tuval manzarası: kartların arkasında, kaydırma/yakınlaştırmadan bağımsız ---- */
-html[data-decor='on']:is([data-pack='sakura'], [data-pack='space']) [data-canvas]::before {
+html[data-pack='space'][data-decor='on'] [data-canvas]::before {
   content: ''; position: absolute; inset: 0; pointer-events: none; background-repeat: no-repeat;
 }
-/* Sakura: sol alttan yükselen kiraz dalları (src/assets'teki SVG; bilerek durağan, bkz. dosyadaki not) */
-html[data-pack='sakura'][data-decor='on'] [data-canvas]::before {
-  background-image: url('../assets/sakura-saf-agac-oshima.svg');
-  background-position: left bottom;
-  background-size: auto min(560px, 80%);
-  opacity: 0.5;
+/* Sakura: sol alttan yükselen kiraz dalları (Canvas'taki .tf-canvas-tree > i).
+   sakura-saf-agac-oshima.svg üst/orta/alt dal gruplarına bölündü; parçalar durağan SVG'dir (bkz. dosyadaki
+   not). Her parça kendi katmanında, dalın tuvale girdiği noktanın çevresinde döner: yalnızca transform
+   canlandırıldığı için GPU'da taşınır, görsel yeniden çizilmez. */
+.tf-canvas-tree { display: none; }
+html[data-pack='sakura'][data-decor='on'] .tf-canvas-tree {
+  display: block; position: absolute; left: 0; bottom: 0; pointer-events: none;
+  height: min(560px, 80%); aspect-ratio: 600 / 760; opacity: 0.5;
 }
-html[data-pack='sakura'][data-theme='dark'][data-decor='on'] [data-canvas]::before { opacity: 0.32; }
+html[data-pack='sakura'][data-theme='dark'][data-decor='on'] .tf-canvas-tree { opacity: 0.32; }
+.tf-canvas-tree i { position: absolute; inset: 0; background: center / contain no-repeat; }
+.tf-canvas-tree i:nth-child(1) { background-image: url('../assets/sakura-dal-1-ust.svg'); transform-origin: 0 55%; }
+.tf-canvas-tree i:nth-child(2) { background-image: url('../assets/sakura-dal-2-orta.svg'); transform-origin: 0 81%; }
+.tf-canvas-tree i:nth-child(3) { background-image: url('../assets/sakura-dal-3-alt.svg'); transform-origin: 0 95%; }
+html[data-pack='sakura'][data-decor='on']:not([data-anim='none']) .tf-canvas-tree i { will-change: transform; }
+html[data-pack='sakura'][data-decor='on']:not([data-anim='none']) .tf-canvas-tree i:nth-child(1) {
+  animation: tf-bough-upper 6.2s cubic-bezier(0.42, 0, 0.58, 1) infinite alternate;
+}
+html[data-pack='sakura'][data-decor='on']:not([data-anim='none']) .tf-canvas-tree i:nth-child(2) {
+  animation: tf-bough-mid 7.1s cubic-bezier(0.42, 0, 0.58, 1) -1.9s infinite alternate;
+}
+html[data-pack='sakura'][data-decor='on']:not([data-anim='none']) .tf-canvas-tree i:nth-child(3) {
+  animation: tf-bough-lower 5.9s cubic-bezier(0.42, 0, 0.58, 1) -3.4s infinite alternate;
+}
+@keyframes tf-bough-upper {
+  from { transform: rotate(-1deg) translateY(1.5px); }
+  to { transform: rotate(1.5deg) translateY(-3px); }
+}
+@keyframes tf-bough-mid {
+  from { transform: rotate(-1.4deg) translateX(-1px); }
+  to { transform: rotate(1.9deg) translateX(2.5px); }
+}
+@keyframes tf-bough-lower {
+  from { transform: rotate(-1.7deg) translateY(-1.5px); }
+  to { transform: rotate(2.4deg) translateY(3.5px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tf-canvas-tree i { animation: none !important; }
+}
 
 /* Sakura: dallardan düşen yapraklar (Canvas'taki .tf-canvas-petals > i). Yalnızca transform ve opacity
    canlandırılır; tarayıcı bunları GPU'da taşır, sayfa yeniden çizilmez. */

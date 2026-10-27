@@ -872,6 +872,12 @@ export function Canvas({
     >
       {/* Tema süsü (Uzay: dönen galaksi); yalnızca CSS ile görünür, içeriğin arkasında kalır */}
       <div className="tf-canvas-art" aria-hidden="true" />
+      {/* Sakura: üç parça kiraz dalı (üst, orta, alt); her biri kendi katmanında GPU'da salınır */}
+      <div className="tf-canvas-tree" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </div>
       {/* Sakura: rüzgârda düşen yapraklar; yalnızca transform/opacity ile canlanır (GPU'da, ana iş parçacığını yormaz) */}
       <div className="tf-canvas-petals" aria-hidden="true">
         {PETALS.map((i) => (
