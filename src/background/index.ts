@@ -1,7 +1,13 @@
 import { LAST_FOLDER_KEY, TRASH_KEY, WORKSPACES_KEY } from '../storage/keys';
+import {
+  isWorkspaceChange,
+  migrateLegacyWorkspaces,
+  readRawWorkspaces,
+  revertWorkspaceChanges,
+} from '../storage/workspaceStore';
 import { readKey, updateKey } from '../storage/kv';
 import { isRestoreMessage, restoreFolder, type RestoreReply } from '../services/restoreService';
-import { takeSnapshotIfDue } from '../storage/snapshotStore';
+import { isSnapshotDue, takeSnapshotIfDue } from '../storage/snapshotStore';
 import type { PageInfo } from '../types';
 import { contextMenuItems, folderIdFromMenuItem } from '../utils/contextMenu';
 import { toOpenTab } from '../utils/tabs';
@@ -132,6 +138,7 @@ chrome.commands.onCommand.addListener((command) => {
 
 // ---- Otomatik yedek ve çöp kutusu bakımı ------------------------------------------------
 async function maintenance(): Promise<void> {
+  await migrateLegacyWorkspaces();
   const now = Date.now();
   await takeSnapshotIfDue(await readWorkspaces(), now);
   await updateKey<unknown>(TRASH_KEY, [], (raw) => {
@@ -141,15 +148,24 @@ async function maintenance(): Promise<void> {
   });
 }
 
+/**
+ * Günlük yedek: değişiklikten ÖNCEKİ hal saklanır; yedeği tetikleyen değişiklik hatalıysa bile geri dönülebilir.
+ * Önce küçük meta anahtarına bakılır: yedek zamanı değilse tüm klasörler okunmaz.
+ */
+async function snapshotBeforeChange(changes: Record<string, chrome.storage.StorageChange>): Promise<void> {
+  const now = Date.now();
+  if (!(await isSnapshotDue(now))) return;
+  const before = revertWorkspaceChanges(await readRawWorkspaces(), changes);
+  await takeSnapshotIfDue(normalizeWorkspaces(before), now);
+}
+
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
-  const change = changes[WORKSPACES_KEY];
-  if (change) {
-    // Günlük yedek: değişiklikten ÖNCEKİ hal saklanır; yedeği tetikleyen değişiklik hatalıysa bile geri dönülebilir.
-    if (change.oldValue !== undefined) {
-      takeSnapshotIfDue(normalizeWorkspaces(change.oldValue), Date.now()).catch((e) =>
-        console.error('[TabFlow] otomatik yedek alınamadı.', e),
-      );
+  if (isWorkspaceChange(changes)) {
+    snapshotBeforeChange(changes).catch((e) => console.error('[TabFlow] otomatik yedek alınamadı.', e));
+    // Eski tek anahtara yazılmış harita (eski sürüm, içe aktarma aracı, test) hemen yeni düzene taşınır.
+    if (changes[WORKSPACES_KEY]?.newValue !== undefined) {
+      migrateLegacyWorkspaces().catch((e) => console.error('[TabFlow] klasörler taşınamadı.', e));
     }
     scheduleMenuRebuild();
   }

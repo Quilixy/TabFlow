@@ -1,9 +1,8 @@
-import { WORKSPACES_KEY } from '../storage/keys';
-import { readKey } from '../storage/kv';
+import { readWorkspaceMap } from '../storage/workspaceStore';
 import type { PageInfo } from '../types';
 import { tabGroupColor, type RestoreMode, type RestoreResult, type TabGroupColor } from '../utils/restore';
 import { toOpenTab } from '../utils/tabs';
-import { buildChildrenIndex, collectSubtree, normalizeWorkspaces } from '../utils/workspaceTree';
+import { buildChildrenIndex, collectSubtree } from '../utils/workspaceTree';
 
 /**
  * Klasör sekmelerini açma (bu pencerede / sekme grubu / yeni pencere). React'ten bağımsızdır: tam ekran uygulama
@@ -129,7 +128,7 @@ class RestoreError extends Error {}
 export async function restoreFolder(options: RestoreRequestOptions): Promise<RestoreResult> {
   const { folderId, recursive, mode, windowId, activate } = options;
   try {
-    const current = normalizeWorkspaces(await readKey<unknown>(WORKSPACES_KEY, {}));
+    const current = await readWorkspaceMap();
     const folder = current[folderId];
     if (!folder) throw new RestoreError('Klasör bulunamadı (başka bir yerden silinmiş olabilir).');
 

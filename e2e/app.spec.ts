@@ -113,4 +113,21 @@ test.describe('tam ekran uygulama', () => {
 
     await expect(zoomLabel).toHaveText('200%'); // Parmaklar iki kat açıldı
   });
+
+  test('eski tek anahtarlı veri klasör başına anahtarlara taşınır ve değişiklikler yalnızca o klasörü yazar', async ({
+    openApp,
+    seed,
+    readStorage,
+  }) => {
+    const app = await openApp();
+    await seed({ a: folder('a', 'Alfa'), b: folder('b', 'Beta') });
+    await expect.poll(() => readStorage<string[]>('wsIndex')).toEqual(['a', 'b']);
+    expect(await readStorage('workspaces')).toBeUndefined();
+    await expect(app.getByRole('treeitem')).toHaveText([/Alfa/, /Beta/]);
+
+    await app.getByRole('treeitem', { name: /Beta/ }).click({ button: 'right' });
+    await app.getByRole('menuitem', { name: 'Üste sabitle' }).click();
+    await expect.poll(async () => (await readStorage<{ favorite?: boolean }>('ws:b'))?.favorite).toBe(true);
+    expect((await readStorage<{ favorite?: boolean }>('ws:a'))?.favorite).toBeUndefined();
+  });
 });

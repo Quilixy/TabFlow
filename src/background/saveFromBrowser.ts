@@ -1,8 +1,8 @@
-import { LAST_FOLDER_KEY, WORKSPACES_KEY } from '../storage/keys';
-import { readKey, updateKey } from '../storage/kv';
+import { LAST_FOLDER_KEY } from '../storage/keys';
+import { readKey } from '../storage/kv';
+import { readWorkspaceMap, updateWorkspaces } from '../storage/workspaceStore';
 import type { PageInfo, WorkspaceMap } from '../types';
 import { appendTab } from '../utils/workspaceOps';
-import { normalizeWorkspaces } from '../utils/workspaceTree';
 
 const BADGE_MS = 2500;
 
@@ -19,7 +19,7 @@ function flashBadge(tabId: number | undefined, text: string, color: string, titl
 }
 
 export async function readWorkspaces(): Promise<WorkspaceMap> {
-  return normalizeWorkspaces(await readKey<unknown>(WORKSPACES_KEY, {}));
+  return readWorkspaceMap();
 }
 
 /**
@@ -30,12 +30,11 @@ export async function savePageToFolder(folderId: string, page: PageInfo, feedbac
   let added = false;
   let folderName = '';
   try {
-    await updateKey<unknown>(WORKSPACES_KEY, {}, (raw) => {
-      const map = normalizeWorkspaces(raw);
+    await updateWorkspaces((map) => {
       const result = appendTab(map, folderId, page, Date.now());
       added = result.added;
       folderName = map[folderId].name;
-      return result.added ? result.map : raw;
+      return result.map;
     });
   } catch (e) {
     console.error('[TabFlow] sayfa kaydedilemedi.', e);

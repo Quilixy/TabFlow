@@ -1,7 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
 import { readKey, updateKey, useStorage } from './useStorage';
+import { useWorkspaceData } from './useWorkspaceData';
+import { readWorkspaceMap } from '../storage/workspaceStore';
 import { queryOpenTabs, useTabManager, type OpenTab } from './useTabManager';
-import { LAST_FOLDER_KEY, TRASH_KEY, WORKSPACES_KEY } from '../storage/keys';
+import { LAST_FOLDER_KEY, TRASH_KEY } from '../storage/keys';
 import { readSnapshots, takeSnapshot } from '../storage/snapshotStore';
 import type { PageInfo, Point, Workspace, WorkspaceMap } from '../types';
 import { mergeWorkspaces, undoImport, type ImportUndo, type MergeStats } from '../utils/backup';
@@ -31,8 +33,6 @@ import {
   toFolderRefs,
 } from '../utils/workspaceTree';
 
-const STORAGE_KEY = WORKSPACES_KEY;
-const EMPTY: WorkspaceMap = {};
 const NO_TRASH: TrashEntry[] = [];
 
 /** Kısayol ve sağ tık menüsünün "son kullanılan klasör"ü. Yazılamazsa önemsizdir (yalnızca kolaylık). */
@@ -68,7 +68,7 @@ export interface SaveAndCloseResult {
 }
 
 export function useWorkspaces() {
-  const { data, isLoading, update: updateRaw, error } = useStorage<WorkspaceMap>(STORAGE_KEY, EMPTY);
+  const { data, isLoading, update, error } = useWorkspaceData();
   const { getOpenTabs, closeTabs, openSingleTab, activateTab } = useTabManager();
   const { data: rawTrash } = useStorage<unknown>(TRASH_KEY, NO_TRASH);
   const trash = useMemo(() => normalizeTrash(rawTrash), [rawTrash]);
@@ -91,16 +91,6 @@ export function useWorkspaces() {
     [closeTabs],
   );
 
-  // Güncelleyici haritayı aynen döndürürse ham değer döner: updateKey bunu "değişiklik yok" sayıp yazmaz.
-  const update = useCallback(
-    (fn: (map: WorkspaceMap) => WorkspaceMap) =>
-      updateRaw((current) => {
-        const normalized = normalizeWorkspaces(current);
-        const next = fn(normalized);
-        return next === normalized ? current : next;
-      }),
-    [updateRaw],
-  );
 
   // ---- Klasörler -------------------------------------------------------------
 
@@ -580,7 +570,7 @@ export function useWorkspaces() {
     async (takenAt: number): Promise<Snapshot> => {
       const snapshot = (await readSnapshots()).find((s) => s.takenAt === takenAt);
       if (!snapshot) throw new Error('Yedek bulunamadı.');
-      const current = normalizeWorkspaces(await readKey<WorkspaceMap>(STORAGE_KEY, EMPTY));
+      const current = await readWorkspaceMap();
       await takeSnapshot(current, Date.now(), 'before-restore');
       const restored = normalizeWorkspaces(snapshot.workspaces);
       await update(() => restored);

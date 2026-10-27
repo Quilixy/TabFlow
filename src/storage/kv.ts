@@ -38,7 +38,7 @@ function enqueue<T>(task: () => Promise<T>): Promise<T> {
  * Bağlamlar arası kilit: popup, tam ekran sekmeleri ve service worker modülün ayrı kopyalarını yükler; kuyruk
  * onları sıraya sokamaz. Web Locks aynı köken (eklenti) içindeki tüm bağlamlarda ortaktır.
  */
-function withLock<T>(key: string, task: () => Promise<T>): Promise<T> {
+export function withLock<T>(key: string, task: () => Promise<T>): Promise<T> {
   const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined;
   if (!locks) return enqueue(task);
   return enqueue(() => locks.request(`tabflow:${key}`, task));

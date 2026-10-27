@@ -37,6 +37,11 @@ async function latestTakenAt(fallback: number): Promise<number> {
   return (await readSnapshots())[0]?.takenAt ?? fallback;
 }
 
+/** Yedek zamanı geldi mi? Yalnızca küçük meta anahtarını okur. */
+export async function isSnapshotDue(now: number): Promise<boolean> {
+  return shouldSnapshot(await readKey<SnapshotMeta | null>(SNAPSHOT_META_KEY, null), now);
+}
+
 /** Son yedekten bu yana yeterli süre geçtiyse yedek alır. Hızlı yol küçük meta anahtarını okur; yedek listesini değil. */
 export async function takeSnapshotIfDue(workspaces: WorkspaceMap, now: number): Promise<boolean> {
   const meta = await readKey<SnapshotMeta | null>(SNAPSHOT_META_KEY, null);
