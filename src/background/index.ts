@@ -15,6 +15,7 @@ import { normalizeTrash, pruneTrash } from '../utils/trash';
 import { isHttpUrl } from '../utils/url';
 import { normalizeWorkspaces } from '../utils/workspaceTree';
 import { maybeAutoExport } from './autoExport';
+import { invalidateOmniboxCache, setupOmnibox } from './omnibox';
 import { flashBadge, readWorkspaces, resolveLastFolder, savePageToFolder } from './saveFromBrowser';
 import { detectLanguage, LANGUAGES, setLanguage, t, type Lang } from '../i18n';
 
@@ -37,6 +38,8 @@ async function loadLanguage(): Promise<void> {
 }
 // Her uyanışta ilk iş: menü ve rozet metinleri doğru dilde olsun.
 const languageReady = loadLanguage().catch(() => undefined);
+
+setupOmnibox(languageReady);
 
 // ---- Sağ tık menüsü: "TabFlow'a kaydet → klasör" ------------------------------------
 let menuSignature = '';
@@ -178,6 +181,7 @@ async function snapshotBeforeChange(changes: Record<string, chrome.storage.Stora
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   if (isWorkspaceChange(changes)) {
+    invalidateOmniboxCache();
     snapshotBeforeChange(changes).catch((e) => console.error('[TabFlow] otomatik yedek alınamadı.', e));
     // Tarayıcı günlerce kapatılmadan kullanılıyorsa diske yedek, açılışı beklemeden bir değişiklikle tetiklenir.
     maybeAutoExport().catch((e) => console.error('[TabFlow] diske yedek alınamadı.', e));

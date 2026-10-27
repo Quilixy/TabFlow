@@ -26,7 +26,7 @@ import { formatSaveAllMessage } from '../utils/format';
 import { formatRestoreResult, type RestoreMode } from '../utils/restore';
 import { currentWindowId, restoreInBackground } from '../services/restoreService';
 import { normalizeQuery, tabMatches } from '../utils/search';
-import { NAVIGATE_KEY } from '../utils/uiSync';
+import { openAppAtFolder } from '../services/navigation';
 import {
   buildChildrenIndex,
   collectSubtree,
@@ -376,15 +376,7 @@ export default function PopupApp({ layout = 'popup' }: PopupAppProps) {
 
   /** Tam ekran uygulamayı açar; folderId verilirse o klasöre gider (uygulama zaten açıksa da). */
   const openFullApp = (folderId?: string) => {
-    if (folderId) {
-      try {
-        localStorage.setItem(NAVIGATE_KEY, JSON.stringify({ id: folderId, at: Date.now() }));
-      } catch {
-        // Depolama kullanılamıyorsa yalnızca uygulamayı aç.
-      }
-    }
-    chrome.runtime
-      .openOptionsPage()
+    openAppAtFolder(folderId)
       .then(() => {
         if (!isPanel) window.close(); // Yan panel açık kalır
       })

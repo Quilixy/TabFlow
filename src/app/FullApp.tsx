@@ -175,30 +175,23 @@ export default function FullApp() {
     [setSelectedFolder, expandMany, workspaces],
   );
 
-  // Popup "şu klasörü tam ekranda göster" dediyse oraya git (uygulama yeni açıldıysa da, zaten açıksa da).
+  // Popup, yan panel ya da adres çubuğu "şu klasörü göster" dediyse oraya git (uygulama yeni açıldıysa da,
+  // zaten açıksa da). İstek tek seferliktir: okunup silinir.
   const revealRef = useRef<string | null>(null);
   useEffect(() => {
-    const handle = (raw: string | null) => {
+    const handle = (raw: unknown) => {
       const id = parseNavigateRequest(raw);
       if (!id) return;
-      try {
-        localStorage.removeItem(NAVIGATE_KEY);
-      } catch {
-        // yok say
-      }
+      void chrome.storage.local.remove(NAVIGATE_KEY).catch(() => undefined);
       revealRef.current = id;
       setSelectedFolder(id);
     };
-    try {
-      handle(localStorage.getItem(NAVIGATE_KEY));
-    } catch {
-      // Depolama kullanılamıyor
-    }
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === NAVIGATE_KEY) handle(e.newValue);
+    chrome.storage.local.get(NAVIGATE_KEY).then((items) => handle(items[NAVIGATE_KEY]), () => undefined);
+    const onChanged = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
+      if (area === 'local' && changes[NAVIGATE_KEY]?.newValue) handle(changes[NAVIGATE_KEY].newValue);
     };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    chrome.storage.onChanged.addListener(onChanged);
+    return () => chrome.storage.onChanged.removeListener(onChanged);
   }, [setSelectedFolder]);
 
   // Veri yüklenince gidilen klasörün üst dallarını aç (ağaçta görünsün).

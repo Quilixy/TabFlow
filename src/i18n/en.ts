@@ -330,4 +330,6 @@ export const en: Messages = {
   // Yan panel
   'popup.openSidePanel': 'Open in side panel',
   'popup.sidePanelHint': 'The side panel stays open while you browse.',
+  // Adres çubuğu
+  'omnibox.default': 'Search TabFlow: <match>%s</match>',
 };

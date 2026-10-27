@@ -12,6 +12,7 @@ Sekmelerini klasörlere ve serbest bir tuvale kaydet, kapat ve saniyeler içinde
 - **Tuvalde çoklu seçim:** `Ctrl`/`Shift` + tık ile seç, `Shift` + boş alanda sürükleyerek alan seç, `Ctrl+A` ile tümünü seç. Seçilenleri birlikte sürükle, bir klasöre bırak, sağ tıkla taşı ya da `Delete` ile sil.
 - **Türkçe ve İngilizce arayüz:** *Görünüm → Dil* (Otomatik tarayıcının dilini izler). Eklentinin adı, açıklaması ve kısayol açıklamaları da çevrilidir.
 - **Yan panel:** popup'taki 'Yan panelde aç' ile aynı arayüz tarayıcının yan panelinde açılır ve tarama sırasında açık kalır; sekme değiştikçe 'zaten kayıtlı' göstergesi güncellenir.
+- **Adres çubuğundan arama:** adres çubuğuna `tf` yazıp boşluk bırak, ardından aradığını yaz: kayıtlı sekmeler ve klasörler öneri olarak çıkar. Sekmeyi seçmek sayfayı açar, klasörü seçmek tam ekran uygulamayı o klasörde açar.
 - **Popup:** aktif sayfa kayıtlıysa hangi klasörlerde olduğunu gösterir; arama sonuçlarında ok tuşlarıyla gezilir (`↓` sonuçlara iner, `→`/`←` klasörü açar/kapatır).
 - Türkçe karakterlere duyarlı arama: "istanbul" → "İstanbul", "calisma" → "Çalışma".
 - Çok sayıda sekme açılırken ilk 10'u yüklenir, kalanlar tıklanınca yüklenir (RAM şişmez).

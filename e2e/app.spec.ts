@@ -164,4 +164,22 @@ test.describe('tam ekran uygulama', () => {
     expect(backup.workspaces.a.name).toBe('Önemli');
     expect((await readStorage<{ lastAt: number | null }>('autoExport'))?.lastAt).toEqual(expect.any(Number));
   });
+
+  test('popup, yan panel ya da adres çubuğundan gelen "klasöre git" isteğini uygular', async ({
+    context,
+    openApp,
+    seed,
+    readStorage,
+  }) => {
+    const app = await openApp();
+    await seed({ a: folder('a', 'Üst'), b: folder('b', 'Hedef', [], 'a') });
+    await expect(app.getByRole('treeitem', { name: /Üst/ })).toBeVisible();
+
+    await context.serviceWorkers()[0].evaluate(() =>
+      chrome.storage.local.set({ 'tabflow-navigate': { id: 'b', at: Date.now() } }),
+    );
+    await expect(app.getByRole('navigation', { name: 'Konum' })).toContainText('Hedef');
+    await expect(app.getByRole('treeitem', { name: /Hedef/ })).toBeVisible(); // üst dal açıldı
+    await expect.poll(() => readStorage('tabflow-navigate')).toBeUndefined();
+  });
 });

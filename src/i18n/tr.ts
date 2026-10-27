@@ -328,6 +328,8 @@ export const tr = {
   // Yan panel
   'popup.openSidePanel': 'Yan panelde aç',
   'popup.sidePanelHint': 'Yan panel tarama sırasında açık kalır.',
+  // Adres çubuğu
+  'omnibox.default': 'TabFlow’da ara: <match>%s</match>',
 } satisfies Record<string, MessageEntry>;
 
 export type Messages = { [K in keyof typeof tr]: MessageEntry };

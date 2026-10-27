@@ -69,16 +69,19 @@ export function diffSyncedState(
   return Object.keys(diff).length > 0 ? (diff as Partial<SyncedUiState>) : null;
 }
 
-/** Popup'tan tam ekran uygulamaya "şu klasörü aç" isteği (tek seferlik localStorage anahtarı). */
+/**
+ * Tam ekran uygulamaya "şu klasörü aç" isteği (tek seferlik chrome.storage anahtarı). Popup, yan panel ve service
+ * worker (adres çubuğu araması) yazar; uygulama okuyup siler.
+ */
 export const NAVIGATE_KEY = 'tabflow-navigate';
 
 /** Bundan eski istekler yok sayılır (ör. uygulama açılamadıysa sonradan beklenmedik gezinme olmasın). */
 const NAVIGATE_TTL_MS = 60_000;
 
-export function parseNavigateRequest(rawJson: string | null, now: number = Date.now()): string | null {
-  if (!rawJson) return null;
+export function parseNavigateRequest(raw: unknown, now: number = Date.now()): string | null {
+  if (!raw) return null;
   try {
-    const { id, at } = (JSON.parse(rawJson) ?? {}) as { id?: unknown; at?: unknown };
+    const { id, at } = ((typeof raw === 'string' ? JSON.parse(raw) : raw) ?? {}) as { id?: unknown; at?: unknown };
     if (typeof id !== 'string' || id === '' || typeof at !== 'number' || now - at > NAVIGATE_TTL_MS) return null;
     return id;
   } catch {
