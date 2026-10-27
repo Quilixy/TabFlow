@@ -398,35 +398,38 @@ html[data-pack='space'] .tf-decor { z-index: 0; }
   100% { opacity: 0; transform: translate(calc(100vw + 40px), 26vh) rotate(14deg); }
 }
 
-/* Uzay: sol altta yüzen halkalı gezegen ve çevresinde dönen uydu; sağ üstte ay */
-.tf-planet-wrap {
-  position: absolute; left: max(1rem, 3vw); bottom: max(1rem, 4vh); width: 240px; height: 240px;
-  animation: tf-planet-float 38s ease-in-out infinite;
-}
-.tf-planet, .tf-moon, .tf-satellite { position: absolute; background-position: center; background-size: contain; background-repeat: no-repeat; }
-.tf-planet { inset: 0; }
-.tf-satellite {
-  left: 0; top: 0; width: 34px; height: 17px;
-  /* Gezegenin çevresinde eğik elips yörünge */
-  offset-path: path('M 4 150 A 116 34 -20 1 1 236 90 A 116 34 -20 1 1 4 150');
-  offset-rotate: 0deg;
-  animation: tf-orbit 46s linear infinite;
-}
+/* Uzay: sağ üstte ay; ara sıra ekranı soldan sağa, hafifçe yükselerek geçen uydu (kuyruklu, ışığı yanıp söner) */
+.tf-moon, .tf-satellite { position: absolute; background-position: center; background-size: contain; background-repeat: no-repeat; }
 .tf-moon {
   right: max(1.5rem, 6vw); top: max(4rem, 11vh); width: 96px; height: 96px;
   animation: tf-moon-float 30s ease-in-out -8s infinite;
 }
-@keyframes tf-planet-float {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  50% { transform: translate(14px, -18px) rotate(4deg); }
-}
 @keyframes tf-moon-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(12px); } }
-@keyframes tf-orbit { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+.tf-satellite {
+  left: 0; top: 68%; width: 30px; height: 15px; opacity: 0;
+  animation: tf-satellite-pass 34s linear 5s infinite;
+}
+.tf-satellite::before {
+  content: ''; position: absolute; right: 100%; top: 50%; width: 140px; height: 2px; translate: 0 -50%;
+  border-radius: 999px; background: linear-gradient(90deg, transparent, rgb(196 181 253 / 0.6));
+}
+.tf-satellite::after {
+  content: ''; position: absolute; left: 50%; top: -2px; width: 3px; height: 3px; border-radius: 50%;
+  background: #f87171; box-shadow: 0 0 6px 2px rgb(248 113 113 / 0.8);
+  animation: tf-satellite-blink 1.4s steps(1) infinite;
+}
+@keyframes tf-satellite-pass {
+  0% { opacity: 0; transform: translate(-60px, 0) rotate(-8deg); }
+  2% { opacity: 0.9; }
+  25% { opacity: 0.9; }
+  27% { opacity: 0; transform: translate(calc(100vw + 180px), -26vh) rotate(-8deg); }
+  100% { opacity: 0; transform: translate(calc(100vw + 180px), -26vh) rotate(-8deg); }
+}
+@keyframes tf-satellite-blink { 50% { opacity: 0.15; } }
 
 /* Koyu tonda belirgin, açık tonda soluk: içerik her zaman önde ve okunur kalır */
-html[data-pack='space'][data-theme='dark'] .tf-planet-wrap { opacity: 0.6; }
 html[data-pack='space'][data-theme='dark'] .tf-moon { opacity: 0.75; }
-html[data-pack='space'][data-theme='light'] .tf-planet-wrap { opacity: 0.75; }
+html[data-pack='space'][data-theme='light'] .tf-satellite::before { background: linear-gradient(90deg, transparent, rgb(99 102 241 / 0.55)); }
 html[data-pack='space'][data-theme='light'] .tf-moon { opacity: 0.85; filter: drop-shadow(0 0 10px rgb(124 58 237 / 0.35)); }
 html[data-pack='space'][data-theme='light'] .tf-star { box-shadow: 0 0 6px 1px var(--tf-star-glow); }
 html[data-pack='space'][data-theme='light'] .tf-comet { background: linear-gradient(90deg, transparent, rgb(99 102 241 / 0.5) 60%, #6366f1); box-shadow: none; }
@@ -435,7 +438,7 @@ html[data-pack='space'][data-theme='light'] .tf-comet::after { background: #6366
 /* Hareketi azalt: hareketli süsler kapanır (Uzay'ın statik yıldızlı arka planı kalır) */
 @media (prefers-reduced-motion: reduce) {
   .tf-petal, .tf-star, .tf-shooting, .tf-comet, .tf-satellite, .tf-burst { display: none; }
-  .tf-planet-wrap, .tf-moon { animation: none; }
+  .tf-moon { animation: none; }
 }
 
 /* ---- Animasyonlar (data-anim: none | pop | fade | slide) ---- */

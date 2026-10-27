@@ -106,6 +106,8 @@ const NO_TABS: SavedTab[] = [];
 const NO_ROWS: PreviewRow[] = [];
 /** Sakura temasında düşen yaprak sayısı (canvas-scene.css her birine ayrı yol ve süre verir). */
 const PETALS = Array.from({ length: 10 }, (_, i) => i);
+/** Uzay temasındaki Avcı takımyıldızının yıldız sayısı (konum ve parlaklıkları canvas-scene.css'te). */
+const ORION_STARS = Array.from({ length: 9 }, (_, i) => i);
 
 /** Klasör başına görünüm (kaydırma/yakınlaştırma) bu oturum boyunca hatırlanır. */
 const viewMemory = new Map<string, View>();
@@ -872,6 +874,12 @@ export function Canvas({
     >
       {/* Tema süsü (Uzay: dönen galaksi); yalnızca CSS ile görünür, içeriğin arkasında kalır */}
       <div className="tf-canvas-art" aria-hidden="true" />
+      {/* Uzay: parıldayan Avcı takımyıldızı */}
+      <div className="tf-canvas-orion" aria-hidden="true">
+        {ORION_STARS.map((i) => (
+          <i key={i} />
+        ))}
+      </div>
       {/* Sakura: üç parça kiraz dalı (üst, orta, alt); her biri kendi katmanında GPU'da salınır */}
       <div className="tf-canvas-tree" aria-hidden="true">
         <i />

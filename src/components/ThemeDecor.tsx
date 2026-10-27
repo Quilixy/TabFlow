@@ -52,12 +52,9 @@ function StarField() {
           })}
         />
       ))}
-      {/* Yüzen gezegen ve çevresinde dönen uydu; köşede ay */}
-      <div className="tf-planet-wrap">
-        <span className="tf-planet" />
-        <span className="tf-satellite" />
-      </div>
+      {/* Köşede ay; ara sıra ekranı boydan boya geçen uydu */}
       <span className="tf-moon" />
+      <span className="tf-satellite" />
       {shootingStars.map((s, i) => (
         <span
           key={i}
@@ -78,7 +75,7 @@ function StarField() {
 }
 
 /**
- * Tema paketinin hareketli süsleri (düşen yapraklar / yıldızlar, gezegen, ay, kayan yıldızlar). Süsler kapalıysa ya da animasyon "Yok" ise çizilmez.
+ * Tema paketinin hareketli süsleri (düşen yapraklar / yıldızlar, ay, geçen uydu, kayan yıldızlar). Süsler kapalıysa ya da animasyon "Yok" ise çizilmez.
  * Statik süsler (Uzay arka planı, Sakura kart dalı) CSS ile gelir; bu bileşen yalnızca hareketli katmanı ekler.
  */
 export function ThemeDecor() {
