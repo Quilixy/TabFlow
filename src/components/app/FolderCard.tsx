@@ -89,7 +89,8 @@ export const FolderCard = memo(function FolderCard({ folder, childCount, rows, x
       data-decor-corner={decor.corner}
       data-decor-variant={decor.variant}
       tabIndex={0}
-      role="button"
+      role="group"
+      aria-roledescription={t('card.roleFolder')}
       aria-label={t('card.folderLabel', {
         name: folder.name,
         tabs: t('count.tabs', { n: folder.tabs.length }),
@@ -135,7 +136,7 @@ export const FolderCard = memo(function FolderCard({ folder, childCount, rows, x
           ) : (
             <p className="line-clamp-2 text-sm leading-snug font-semibold tracking-tight text-gray-900">{folder.name}</p>
           )}
-          <p className="mt-0.5 truncate text-[11px] font-medium text-gray-400">
+          <p className="mt-0.5 truncate text-[11px] font-medium text-gray-500">
             {t('count.tabs', { n: folder.tabs.length })}
             {childCount > 0 ? ` · ${t('count.folders', { n: childCount })}` : ''}
           </p>
@@ -148,7 +149,7 @@ export const FolderCard = memo(function FolderCard({ folder, childCount, rows, x
       </div>
 
       <ul className="mt-3 space-y-1.5">
-        {rows.length === 0 && <li className="text-xs text-gray-400 italic">{t('card.emptyFolder')}</li>}
+        {rows.length === 0 && <li className="text-xs text-gray-500 italic">{t('card.emptyFolder')}</li>}
         {rows.map((row) => {
           const indent = { paddingLeft: row.depth * INDENT_PX };
           if (row.kind === 'tab') {
@@ -165,13 +166,13 @@ export const FolderCard = memo(function FolderCard({ folder, childCount, rows, x
                 <FolderGlyph icon={row.folder.icon} color={row.folder.color} width={16} height={16} className="shrink-0" />
                 <span className="truncate text-xs font-semibold text-gray-800">{row.folder.name}</span>
                 {row.folder.tabs.length > 0 && (
-                  <span className="ml-auto shrink-0 pl-1 text-[11px] font-medium text-gray-400">{row.folder.tabs.length}</span>
+                  <span className="ml-auto shrink-0 pl-1 text-[11px] font-medium text-gray-500">{row.folder.tabs.length}</span>
                 )}
               </li>
             );
           }
           return (
-            <li key={row.key} style={indent} className="text-[11px] font-medium text-gray-400">
+            <li key={row.key} style={indent} className="text-[11px] font-medium text-gray-500">
               {t('card.more', { n: row.count })}
             </li>
           );

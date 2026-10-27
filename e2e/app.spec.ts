@@ -9,7 +9,7 @@ test.describe('tam ekran uygulama', () => {
     await app.getByRole('button', { name: 'Oluştur' }).click();
 
     await expect(app.getByRole('treeitem', { name: /Araştırma/ })).toBeVisible();
-    await expect(app.getByRole('button', { name: /Araştırma klasörü/ })).toBeVisible();
+    await expect(app.getByRole('group', { name: /Araştırma klasörü/ })).toBeVisible();
   });
 
   test('açık sekmelerin tümünü kaydeder ve kapatır', async ({ context, openApp, openSite }) => {
@@ -64,16 +64,16 @@ test.describe('tam ekran uygulama', () => {
     });
     await app.getByRole('treeitem', { name: /Kutu/ }).click();
 
-    await app.getByRole('button', { name: /^Bir / }).click();
-    await app.getByRole('button', { name: /^İki / }).click({ modifiers: ['Shift'] });
+    await app.getByRole('group', { name: /^Bir / }).click();
+    await app.getByRole('group', { name: /^İki / }).click({ modifiers: ['Shift'] });
     await expect(app.getByText('öğe seçili')).toContainText('2');
     await app.keyboard.press('Delete');
 
-    await expect(app.getByRole('button', { name: /^Bir / })).toHaveCount(0);
-    await expect(app.getByRole('button', { name: /^Üç / })).toBeVisible();
+    await expect(app.getByRole('group', { name: /^Bir / })).toHaveCount(0);
+    await expect(app.getByRole('group', { name: /^Üç / })).toBeVisible();
     await app.getByRole('button', { name: 'Geri al' }).click();
-    await expect(app.getByRole('button', { name: /^Bir / })).toBeVisible();
-    await expect(app.getByRole('button', { name: /^İki / })).toBeVisible();
+    await expect(app.getByRole('group', { name: /^Bir / })).toBeVisible();
+    await expect(app.getByRole('group', { name: /^İki / })).toBeVisible();
   });
 
   test('bir değişiklikten sonra otomatik yedek alınır', async ({ openApp, seed, readStorage }) => {
@@ -196,8 +196,8 @@ test.describe('tam ekran uygulama', () => {
 
     await expect(app.getByRole('status')).toContainText('3 sekme “Oturum” klasörüne kaydedildi. 1 siteye göre alt klasörlere ayrıldı.');
     await app.getByRole('treeitem', { name: /Oturum/ }).click();
-    await expect(app.getByRole('button', { name: /haber\.tabflow\.test klasörü, 2 sekme/ })).toBeVisible();
-    await expect(app.getByRole('button', { name: /^1 \(blog\.tabflow\.test\)/ })).toBeVisible();
+    await expect(app.getByRole('group', { name: /haber\.tabflow\.test klasörü, 2 sekme/ })).toBeVisible();
+    await expect(app.getByRole('group', { name: /^1 \(blog\.tabflow\.test\)/ })).toBeVisible();
   });
 
   test('Ctrl+K komut paletiyle klasöre gider ve komut çalıştırır', async ({ openApp, seed }) => {

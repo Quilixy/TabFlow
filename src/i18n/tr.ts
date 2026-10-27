@@ -238,6 +238,8 @@ export const tr = {
   'canvas.hidePreviews': 'Alt klasör içeriklerini gizle',
   'canvas.showPreviews': 'Alt klasör içeriklerini göster',
   'card.folderLabel': '{name} klasörü, {tabs}{sub}',
+  'card.roleTab': 'sekme kartı',
+  'card.roleFolder': 'klasör kartı',
   'card.folderTitle': '{name}\nÇift tık: klasöre git · F2: yeniden adlandır',
   'card.emptyFolder': 'Boş klasör',
   'card.more': '+{n} daha',

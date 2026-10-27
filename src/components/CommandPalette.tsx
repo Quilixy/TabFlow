@@ -94,7 +94,7 @@ export function CommandPalette({ commands, onClose }: CommandPaletteProps) {
               }`}
             >
               <span className="min-w-0 flex-1 truncate">{command.label}</span>
-              {command.hint && <span className="shrink-0 text-xs text-gray-500">{command.hint}</span>}
+              {command.hint && <span className="shrink-0 text-xs text-gray-600">{command.hint}</span>}
             </li>
           ))}
         </ul>

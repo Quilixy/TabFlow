@@ -29,7 +29,8 @@ export const TabCard = memo(function TabCard({ tab, x, y, isDragging, isSelected
     <div
       data-item-id={tab.id}
       tabIndex={0}
-      role="button"
+      role="group"
+      aria-roledescription={t('card.roleTab')}
       aria-label={`${tab.title} (${hostOf(tab.url)})`}
       style={{ left: x, top: y, width: TAB_CARD_W }}
       onPointerDown={(e) => onPointerDown(e, tab.id, x, y)}
@@ -59,7 +60,7 @@ export const TabCard = memo(function TabCard({ tab, x, y, isDragging, isSelected
         </div>
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-sm leading-snug font-medium tracking-tight text-gray-900">{tab.title}</p>
-          <p className="mt-0.5 truncate text-[11px] font-medium text-gray-400">{hostOf(tab.url)}</p>
+          <p className="mt-0.5 truncate text-[11px] font-medium text-gray-500">{hostOf(tab.url)}</p>
         </div>
         <div data-no-drag className="-mt-1 -mr-1 flex flex-col opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 transition-opacity">
           <IconButton label={t('canvas.openBackground')} onClick={() => onOpen(tab.id)}>

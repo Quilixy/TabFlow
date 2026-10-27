@@ -134,7 +134,7 @@ export function PopupFolderRow({
                       <Favicon key={tab.id} pageUrl={tab.url} fallbackUrl={tab.favIconUrl} title={tab.title} />
                     ))}
                   </span>
-                  {extra > 0 && <span className="pl-1 text-[11px] text-gray-400">+{extra}</span>}
+                  {extra > 0 && <span className="pl-1 text-[11px] text-gray-500">+{extra}</span>}
                 </span>
               )}
             </span>

@@ -89,6 +89,24 @@ export const test = base.extend<Fixtures>({
 
 export const expect = test.expect;
 
+export interface Look {
+  pack: 'default' | 'sakura' | 'space';
+  theme: 'light' | 'dark';
+  accent?: string;
+  decor?: boolean;
+}
+
+/** Görünüm ayarlarını (arayüz deposu, localStorage) yazar ve sayfayı yeniden yükler. */
+export async function setLook(page: Page, look: Look) {
+  await page.evaluate((l) => {
+    const raw = JSON.parse(localStorage.getItem('tabflow-ui') ?? '{"state":{},"version":0}');
+    Object.assign(raw.state, { accent: 'indigo', decor: true, ...l });
+    localStorage.setItem('tabflow-ui', JSON.stringify(raw));
+  }, look);
+  await page.reload();
+  await page.getByRole('heading', { name: 'TabFlow' }).waitFor();
+}
+
 /** Testlerde kullanılan küçük klasör/sekme kurucuları. */
 export const folder = (id: string, name: string, tabs: { url: string; title: string }[] = [], parentId: string | null = null) => ({
   id,
@@ -98,3 +116,10 @@ export const folder = (id: string, name: string, tabs: { url: string; title: str
   updatedAt: 1,
   tabs: tabs.map((t, i) => ({ id: `${id}-${i}`, favIconUrl: null, pinned: false, ...t })),
 });
+
+/** Erişilebilirlik ve görsel testlerin ortak örnek kitaplığı: iki kök klasör ve bir alt klasör. */
+export const SAMPLE_LIBRARY = {
+  a: { ...folder('a', 'İş', [{ url: `${SITE}/1`, title: 'Takvim' }, { url: `${SITE}/2`, title: 'Posta' }]), x: 32, y: 32 },
+  b: { ...folder('b', 'Okuma', [{ url: `${SITE}/3`, title: 'Blog' }]), x: 320, y: 32, color: 'rose' },
+  c: { ...folder('c', 'Proje', [], 'a'), x: 32, y: 32 },
+};

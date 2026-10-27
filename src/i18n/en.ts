@@ -237,6 +237,8 @@ export const en: Messages = {
   'canvas.hidePreviews': 'Hide subfolder contents',
   'canvas.showPreviews': 'Show subfolder contents',
   'card.folderLabel': 'Folder {name}, {tabs}{sub}',
+  'card.roleTab': 'tab card',
+  'card.roleFolder': 'folder card',
   'card.folderTitle': '{name}\nDouble-click: open folder · F2: rename',
   'card.emptyFolder': 'Empty folder',
   'card.more': '+{n} more',
