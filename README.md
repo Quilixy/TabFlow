@@ -9,7 +9,19 @@ Sekmelerini klasörlere ve serbest bir tuvale kaydet, kapat ve saniyeler içinde
 - İç içe klasörler, klasör rengi ve simgesi, tema paketleri (açık/koyu, vurgu rengi).
 - Türkçe karakterlere duyarlı arama: "istanbul" → "İstanbul", "calisma" → "Çalışma".
 - Çok sayıda sekme açılırken ilk 10'u yüklenir, kalanlar tıklanınca yüklenir (RAM şişmez).
+- **Sağ tık menüsü:** bir sayfaya ya da bağlantıya sağ tıkla → *TabFlow'a kaydet* → klasör. Popup'ı açmadan kaydeder; simgedeki rozet sonucu gösterir (✓ kaydedildi, = zaten vardı, ! kaydedilemedi).
+- **Çöp kutusu:** silinen klasörler (alt klasörleriyle) ve sekmeler 30 gün saklanır; tam ekran uygulamadan tek tek geri yüklenir.
+- **Otomatik yedek:** günde bir kez klasörlerin anlık görüntüsü alınır, son 7'si tutulur (*Yedek* menüsü). Bir yedeğe dönmeden önce o anki hal de yedeklenir.
 - JSON yedeği alma ve geri yükleme. Geri yüklemede mevcut veriler silinmez, aynı klasörün sekmeleri birleştirilir.
+
+## Klavye kısayolları
+
+| Kısayol | Ne yapar |
+| --- | --- |
+| `Alt+Shift+T` | Tam ekran uygulamayı aç |
+| `Alt+Shift+S` | Aktif sayfayı son kullanılan klasöre kaydet |
+
+Kısayollar `chrome://extensions/shortcuts` adresinden değiştirilebilir.
 
 ## Kurulum (geliştirme)
 
@@ -40,6 +52,7 @@ Değişiklikleri izleyerek derlemek için `npm run watch` kullan; ardından ekle
 | `tabs` | Açık sekmelerin adresini/başlığını okumak, sekme açmak ve kapatmak |
 | `storage`, `unlimitedStorage` | Klasörleri yerel olarak saklamak (çok sayıda sekmede kota dolmasın) |
 | `favicon` | Site simgelerini Chrome'un önbelleğinden göstermek |
+| `contextMenus` | Sayfa ve bağlantılarda "TabFlow'a kaydet" menüsü |
 
 Veriler yalnızca bu tarayıcıda (`chrome.storage.local`) tutulur; hiçbir sunucuya gönderilmez.
 
@@ -71,11 +84,12 @@ Veriler yalnızca bu tarayıcıda (`chrome.storage.local`) tutulur; hiçbir sunu
 
 ```
 src/
-  background/   service worker (kısayol)
+  background/   service worker (kısayollar, sağ tık menüsü, otomatik yedek)
   popup/        araç çubuğu açılır penceresi
   app/          tam ekran uygulama
   components/   arayüz bileşenleri (app/, popup/, ui/)
   hooks/        depolama, sekme ve onay kancaları
+  storage/      React'ten bağımsız depolama (kilitli yazma, yedekler); service worker da kullanır
   store/        arayüz durumu (zustand) ve pencereler arası eşitleme
   utils/        saf mantık (ağaç, arama, yedek, tuval matematiği) ve testleri
   styles/       tema değişkenleri

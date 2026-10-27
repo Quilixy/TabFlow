@@ -9,7 +9,8 @@ import { FolderStylePicker, type FolderStylePatch } from '../components/FolderSt
 import { OpenTabsList } from '../components/OpenTabsList';
 import { Button } from '../components/ui/Button';
 import { ErrorBanner } from '../components/ui/ErrorBanner';
-import { ArchiveIcon, ChevronDownIcon, ExternalLinkIcon, PlusIcon } from '../components/ui/icons';
+import { TrashPanel } from '../components/TrashPanel';
+import { ArchiveIcon, ChevronDownIcon, ExternalLinkIcon, PlusIcon, TrashIcon } from '../components/ui/icons';
 import { Toast } from '../components/ui/Toast';
 import { useConfirm } from '../hooks/useConfirm';
 import { useContextMenu } from '../hooks/useContextMenu';
@@ -20,7 +21,8 @@ import { getErrorMessage, useUiStore, type RenameSource } from '../store/useUiSt
 import type { Point, SavedTab } from '../types';
 import { backupFileName, createBackup, MAX_BACKUP_BYTES, parseBackup, serializeBackup } from '../utils/backup';
 import { downloadTextFile } from '../utils/download';
-import { formatAgo, formatRestoreMessage, formatSaveAllMessage } from '../utils/format';
+import { formatAgo, formatDateTime, formatRestoreMessage, formatSaveAllMessage } from '../utils/format';
+import type { Snapshot } from '../utils/snapshots';
 import { LEAVE_ANIMATION_MS } from '../utils/theme';
 import { NAVIGATE_KEY, parseNavigateRequest } from '../utils/uiSync';
 import { canReparent, collectSubtree, countTabs, getPath, pathLabel } from '../utils/workspaceTree';
@@ -29,8 +31,7 @@ const SAVE_ACTION = '__save__';
 const CREATE_ACTION = '__create__';
 /** Bu sayıdan fazla sekme tek hamlede açılacaksa kullanıcıdan onay istenir. */
 const RESTORE_CONFIRM_THRESHOLD = 25;
-/** Bu kadar (veya daha fazla) sekme/alt klasör içeren bir klasör silinirken onay istenir. */
-const DELETE_CONFIRM_TABS = 10;
+
 const RECENT_FOLDER_COUNT = 15;
 /** Bu süreden eski (veya hiç alınmamış) yedekte yedek düğmesinde uyarı noktası gösterilir. */
 const BACKUP_REMINDER_MS = 14 * 24 * 60 * 60 * 1000;
@@ -51,7 +52,10 @@ export default function FullApp() {
     renameFolder,
     setFolderStyle,
     removeFolder,
-    reinsertFolders,
+    trash,
+    restoreFromTrash,
+    deleteFromTrash,
+    emptyTrash,
     moveFolder,
     setFolderPosition,
     applyLayout,
@@ -59,9 +63,10 @@ export default function FullApp() {
     moveTab,
     setTabPosition,
     removeTab,
-    insertTab,
     importWorkspaces,
     revertImport,
+    listSnapshots,
+    restoreSnapshot,
     restoreFolder,
     openTab,
     activateTab,
@@ -92,6 +97,7 @@ export default function FullApp() {
   const [showOpenTabs, setShowOpenTabs] = useState(true);
   const [mountedAt] = useState(() => Date.now());
   const [stylePicker, setStylePicker] = useState<{ folderId: string; x: number; y: number } | null>(null);
+  const [showTrash, setShowTrash] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { menu: backupMenu, openAt: openBackupMenuAt } = useContextMenu();
   const { menu: restoreMenu, openAt: openRestoreMenuAt } = useContextMenu();
@@ -369,22 +375,8 @@ export default function FullApp() {
       if (!folder) return;
       // Silinen klasörün içindeysek bir üst klasöre çık.
       const isInside = getPath(workspaces, currentId).some((w) => w.id === id);
-      const subtree = collectSubtree(index, workspaces, id);
-      const tabCount = countTabs(subtree);
+      // Onay sorulmaz: silinen her şey çöp kutusuna gider ve oradan geri yüklenebilir.
       void run(`delete:${id}`, async () => {
-        // Büyük ağaçlarda yalnızca birkaç saniyelik "Geri al" bildirimine güvenme.
-        if (tabCount + subtree.length - 1 >= DELETE_CONFIRM_TABS) {
-          const ok = await confirm({
-            title: `“${folder.name}” silinsin mi?`,
-            message:
-              subtree.length > 1
-                ? `${subtree.length - 1} alt klasör ve toplam ${tabCount} sekme de silinecek.`
-                : `İçindeki ${tabCount} sekme de silinecek.`,
-            confirmLabel: 'Sil',
-            danger: true,
-          });
-          if (!ok) return;
-        }
         // Çıkış animasyonu oynasın, sonra gerçekten sil.
         if (animation !== 'none') {
           setLeaving([id], true);
@@ -396,27 +388,26 @@ export default function FullApp() {
         } finally {
           setLeaving([id], false);
         }
-        if (removed.length === 0) return;
+        const { removed: folders, trashId } = removed;
+        if (folders.length === 0 || trashId === null) return;
         if (isInside) setSelectedFolder(folder.parentId);
-        const extra = removed.length - 1;
-        showToast(`“${folder.name}”${extra > 0 ? ` ve ${extra} alt klasör` : ''} silindi.`, {
+        const extra = folders.length - 1;
+        showToast(`“${folder.name}”${extra > 0 ? ` ve ${extra} alt klasör` : ''} çöp kutusuna taşındı.`, {
           label: 'Geri al',
           run: () =>
             void run(`undo-delete:${id}`, async () => {
-              await reinsertFolders(removed);
-              markEntering(removed.map((w) => w.id));
+              await restoreFromTrash(trashId);
+              markEntering(folders.map((w) => w.id));
             }),
         });
       });
     },
     [
       workspaces,
-      index,
       currentId,
       run,
-      confirm,
       removeFolder,
-      reinsertFolders,
+      restoreFromTrash,
       setSelectedFolder,
       showToast,
       animation,
@@ -453,14 +444,39 @@ export default function FullApp() {
       void run(`remove-tab:${tabId}`, async () => {
         const removed = await removeTab(folderId, tabId);
         if (!removed) return;
-        showToast('Sekme klasörden kaldırıldı.', {
+        showToast('Sekme çöp kutusuna taşındı.', {
           label: 'Geri al',
-          run: () => void run(`undo-remove-tab:${tabId}`, () => insertTab(folderId, removed.tab, removed.index)),
+          run: () => void run(`undo-remove-tab:${tabId}`, () => restoreFromTrash(removed.trashId)),
         });
       });
     },
-    [run, removeTab, insertTab, showToast],
+    [run, removeTab, restoreFromTrash, showToast],
   );
+
+  // ---- Çöp kutusu ------------------------------------------------------------------
+  const handleTrashRestore = useCallback(
+    (entryId: string) => {
+      void run(`trash-restore:${entryId}`, async () => {
+        const restored = await restoreFromTrash(entryId);
+        showToast(restored ? 'Geri yüklendi.' : 'Bu öğe artık çöp kutusunda değil.');
+      });
+    },
+    [run, restoreFromTrash, showToast],
+  );
+
+  const handleTrashDelete = useCallback(
+    (entryId: string) => {
+      void run(`trash-delete:${entryId}`, () => deleteFromTrash(entryId));
+    },
+    [run, deleteFromTrash],
+  );
+
+  const handleTrashEmpty = useCallback(() => {
+    void run('trash-empty', async () => {
+      await emptyTrash();
+      showToast('Çöp kutusu boşaltıldı.');
+    });
+  }, [run, emptyTrash, showToast]);
 
   // ---- Yedekleme -------------------------------------------------------------------
   const handleExport = useCallback(() => {
@@ -504,13 +520,47 @@ export default function FullApp() {
     [run, confirm, importWorkspaces, revertImport, showToast],
   );
 
+  const handleRestoreSnapshot = useCallback(
+    (snapshot: Snapshot) => {
+      void run('restore-snapshot', async () => {
+        const ok = await confirm({
+          title: `${formatDateTime(snapshot.takenAt)} yedeğine dönülsün mü?`,
+          message:
+            `Tüm klasörler bu yedekteki hale döner (${snapshot.folderCount} klasör, ${snapshot.tabCount} sekme).\n` +
+            'Şimdiki halin de otomatik yedeklere eklenir; istersen oradan geri dönebilirsin.',
+          confirmLabel: 'Yedeğe dön',
+          danger: true,
+        });
+        if (!ok) return;
+        await restoreSnapshot(snapshot.takenAt);
+        setSelectedFolder(null);
+        showToast(`${formatDateTime(snapshot.takenAt)} yedeğine dönüldü.`);
+      });
+    },
+    [run, confirm, restoreSnapshot, setSelectedFolder, showToast],
+  );
+
   const openBackupMenu = (e: MouseEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    openBackupMenuAt(rect.right, rect.bottom + 4, [
-      { type: 'heading', label: lastBackupAt ? `Son yedek: ${formatAgo(lastBackupAt)}` : 'Henüz yedek alınmadı' },
-      { label: 'Yedeği indir (JSON)', onSelect: handleExport },
-      { label: 'Yedekten içe aktar…', onSelect: () => fileInputRef.current?.click() },
-    ]);
+    const show = (snapshots: Snapshot[]) =>
+      openBackupMenuAt(rect.right, rect.bottom + 4, [
+        { type: 'heading', label: lastBackupAt ? `Son yedek: ${formatAgo(lastBackupAt)}` : 'Henüz yedek alınmadı' },
+        { label: 'Yedeği indir (JSON)', onSelect: handleExport },
+        { label: 'Yedekten içe aktar…', onSelect: () => fileInputRef.current?.click() },
+        { type: 'separator' },
+        { type: 'heading', label: 'Otomatik yedekler (günde bir, son 7)' },
+        ...(snapshots.length === 0
+          ? [{ label: 'Henüz otomatik yedek yok', onSelect: () => undefined, disabled: true }]
+          : snapshots.map((s) => ({
+              label: `${formatDateTime(s.takenAt)} · ${s.folderCount} klasör, ${s.tabCount} sekme${
+                s.reason === 'before-restore' ? ' (dönüşten önce)' : ''
+              }`,
+              onSelect: () => handleRestoreSnapshot(s),
+              disabled: isBusy,
+            }))),
+      ]);
+    // Liste okunamazsa menü yine açılsın (yalnızca otomatik yedekler eksik kalır).
+    listSnapshots().then(show, () => show([]));
   };
 
   const handleOpenSavedTab = useCallback(
@@ -586,6 +636,16 @@ export default function FullApp() {
             }}
           />
           {backupMenu}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowTrash(true)}
+            title="Silinen klasör ve sekmeler"
+            aria-label={`Çöp kutusu${trash.length > 0 ? ` (${trash.length} öğe)` : ''}`}
+          >
+            <TrashIcon />
+            {trash.length > 0 && <span className="tabular-nums">{trash.length}</span>}
+          </Button>
           <AppearanceMenu />
         </div>
       </header>
@@ -728,6 +788,16 @@ export default function FullApp() {
           y={stylePicker.y}
           onChange={handleStyleChange}
           onClose={() => setStylePicker(null)}
+        />
+      )}
+      {showTrash && (
+        <TrashPanel
+          entries={trash}
+          busy={isBusy}
+          onRestore={handleTrashRestore}
+          onDelete={handleTrashDelete}
+          onEmpty={handleTrashEmpty}
+          onClose={() => setShowTrash(false)}
         />
       )}
       {confirmDialog}

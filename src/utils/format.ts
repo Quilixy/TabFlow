@@ -24,3 +24,8 @@ export function formatSaveAllMessage(saved: number, folderName: string, skipped:
   if (skipped > 0) message += ` ${skipped} sekme web sayfası olmadığı için açık bırakıldı.`;
   return message;
 }
+
+const dateTimeFormat = new Intl.DateTimeFormat('tr', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+/** "27 Eki 14:05" */
+export const formatDateTime = (timestamp: number): string => dateTimeFormat.format(timestamp);

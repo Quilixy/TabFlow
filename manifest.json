@@ -27,9 +27,23 @@
   },
   "commands": {
     "open-app": {
-      "suggested_key": { "default": "Alt+Shift+T" },
+      "suggested_key": {
+        "default": "Alt+Shift+T"
+      },
       "description": "TabFlow'u tam ekranda aç"
+    },
+    "save-to-last-folder": {
+      "suggested_key": {
+        "default": "Alt+Shift+S"
+      },
+      "description": "Aktif sayfayı son kullanılan klasöre kaydet"
     }
   },
-  "permissions": ["tabs", "storage", "unlimitedStorage", "favicon"]
+  "permissions": [
+    "tabs",
+    "storage",
+    "unlimitedStorage",
+    "favicon",
+    "contextMenus"
+  ]
 }

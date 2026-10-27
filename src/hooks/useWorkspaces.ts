@@ -1,9 +1,14 @@
 import { useCallback, useMemo, useState } from 'react';
-import { readKey, useStorage } from './useStorage';
+import { readKey, updateKey, useStorage } from './useStorage';
 import { queryOpenTabs, useTabManager, type OpenTab } from './useTabManager';
+import { LAST_FOLDER_KEY, TRASH_KEY, WORKSPACES_KEY } from '../storage/keys';
+import { readSnapshots, takeSnapshot } from '../storage/snapshotStore';
 import type { PageInfo, Point, SavedTab, Workspace, WorkspaceMap } from '../types';
 import { mergeWorkspaces, undoImport, type ImportUndo, type MergeStats } from '../utils/backup';
 import { isFolderColor, isFolderIcon } from '../utils/folderStyle';
+import type { Snapshot } from '../utils/snapshots';
+import { normalizeTrash, pushTrash, removeTrashEntry, type TrashEntry } from '../utils/trash';
+import { appendTab, restoreTrashEntry, toSavedTab } from '../utils/workspaceOps';
 import {
   buildChildrenIndex,
   canReparent,
@@ -15,18 +20,21 @@ import {
   toFolderRefs,
 } from '../utils/workspaceTree';
 
-const STORAGE_KEY = 'workspaces';
+const STORAGE_KEY = WORKSPACES_KEY;
 const EMPTY: WorkspaceMap = {};
+const NO_TRASH: TrashEntry[] = [];
 
-const toSavedTab = (page: PageInfo, position: Point): SavedTab => ({
-  id: crypto.randomUUID(),
-  url: page.url,
-  title: page.title,
-  favIconUrl: page.favIconUrl,
-  pinned: page.pinned,
-  x: position.x,
-  y: position.y,
-});
+/** Kısayol ve sağ tık menüsünün "son kullanılan klasör"ü. Yazılamazsa önemsizdir (yalnızca kolaylık). */
+const rememberLastFolder = (folderId: string) => {
+  chrome.storage.local.set({ [LAST_FOLDER_KEY]: folderId }).catch(() => undefined);
+};
+
+const updateTrash = (fn: (entries: TrashEntry[]) => TrashEntry[]) =>
+  updateKey<unknown>(TRASH_KEY, NO_TRASH, (raw) => {
+    const entries = normalizeTrash(raw);
+    const next = fn(entries);
+    return next === entries ? raw : next;
+  });
 
 const requireName = (rawName: string): string => {
   const name = rawName.trim();
@@ -51,6 +59,8 @@ export interface SaveAndCloseResult {
 export function useWorkspaces() {
   const { data, isLoading, update: updateRaw, error } = useStorage<WorkspaceMap>(STORAGE_KEY, EMPTY);
   const { getOpenTabs, closeTabs, openTabs, openSingleTab, activateTab } = useTabManager();
+  const { data: rawTrash } = useStorage<unknown>(TRASH_KEY, NO_TRASH);
+  const trash = useMemo(() => normalizeTrash(rawTrash), [rawTrash]);
 
   // Her okumada normalize: eski (v1) veri bile geçerli v2 şekliyle görünür, ilk yazmada kalıcı olur.
   const [normalize] = useState(createSharedNormalizer);
@@ -125,6 +135,7 @@ export function useWorkspaces() {
         };
         return { ...current, [id]: folder };
       });
+      rememberLastFolder(id);
       const closeFailed = closeOriginal ? await closeAfterSave([tab.id]) : false;
       return { folder: next[id], closeFailed };
     },
@@ -164,6 +175,7 @@ export function useWorkspaces() {
         };
         return { ...current, [id]: folder };
       });
+      rememberLastFolder(id);
       const closeFailed = await closeAfterSave(open.map((t) => t.id));
       return { folder: next[id], skipped, closeFailed };
     },
@@ -182,9 +194,13 @@ export function useWorkspaces() {
     [update],
   );
 
-  /** Klasörü alt klasörleriyle birlikte siler; "Geri al" için silinenleri döndürür. */
+  /**
+   * Klasörü alt klasörleriyle birlikte çöp kutusuna taşır. Önce silinir (silinenler kesin bilinsin), sonra çöp
+   * kutusuna yazılır; o yazma başarısız olursa klasörler geri konur: hiçbir şey sessizce kaybolmaz.
+   * "Geri al" için çöp kutusu kaydının kimliğini döndürür.
+   */
   const removeFolder = useCallback(
-    async (id: string): Promise<Workspace[]> => {
+    async (id: string): Promise<{ removed: Workspace[]; trashId: string | null }> => {
       let removed: Workspace[] = [];
       await update((current) => {
         removed = collectSubtree(buildChildrenIndex(current), current, id);
@@ -193,7 +209,17 @@ export function useWorkspaces() {
         for (const folder of removed) delete next[folder.id];
         return next;
       });
-      return removed;
+      if (removed.length === 0) return { removed, trashId: null };
+
+      const now = Date.now();
+      const entry: TrashEntry = { id: crypto.randomUUID(), kind: 'folder', deletedAt: now, folders: removed };
+      try {
+        await updateTrash((entries) => pushTrash(entries, entry, now));
+      } catch (e) {
+        await update((current) => restoreTrashEntry(current, entry, Date.now()));
+        throw new Error('Klasör çöp kutusuna taşınamadı, silinmedi.', { cause: e });
+      }
+      return { removed, trashId: entry.id };
     },
     [update],
   );
@@ -219,18 +245,28 @@ export function useWorkspaces() {
     [update],
   );
 
-  /** Silinen klasörleri olduğu gibi geri koyar (Geri al). */
-  const reinsertFolders = useCallback(
-    async (folders: Workspace[]): Promise<void> => {
-      await update((current) => {
-        const next = { ...current };
-        const now = Date.now();
-        for (const folder of folders) next[folder.id] = { ...folder, updatedAt: now };
-        return next;
-      });
+  // ---- Çöp kutusu --------------------------------------------------------------
+
+  /** Çöp kutusundaki öğeyi geri yükler ve listeden kaldırır. Öğe zaten yoksa false. */
+  const restoreFromTrash = useCallback(
+    async (entryId: string): Promise<boolean> => {
+      const entry = normalizeTrash(await readKey<unknown>(TRASH_KEY, NO_TRASH)).find((e) => e.id === entryId);
+      if (!entry) return false;
+      // Önce geri koy, sonra listeden sil: arada hata olursa öğe çöp kutusunda kalır (geri yükleme tekrarlanabilir).
+      await update((current) => restoreTrashEntry(current, entry, Date.now()));
+      await updateTrash((entries) => removeTrashEntry(entries, entryId));
+      return true;
     },
     [update],
   );
+
+  const deleteFromTrash = useCallback(async (entryId: string): Promise<void> => {
+    await updateTrash((entries) => removeTrashEntry(entries, entryId));
+  }, []);
+
+  const emptyTrash = useCallback(async (): Promise<void> => {
+    await updateTrash((entries) => (entries.length === 0 ? entries : []));
+  }, []);
 
   /**
    * 'unchanged': klasör zaten bu üst klasörün altındaydı. 'repositioned': öyleydi ama konum verildiği için
@@ -318,18 +354,11 @@ export function useWorkspaces() {
     ): Promise<{ added: boolean; closeFailed: boolean }> => {
       let added = true;
       await update((current) => {
-        const target = current[folderId];
-        if (!target) throw new Error('Hedef klasör bulunamadı.');
-        if (target.tabs.some((t) => t.url === tab.url)) {
-          added = false;
-          return current;
-        }
-        const pos = position ?? gridPosition(siblingItemCount(current, folderId));
-        return {
-          ...current,
-          [folderId]: { ...target, updatedAt: Date.now(), tabs: [...target.tabs, toSavedTab(tab, pos)] },
-        };
+        const result = appendTab(current, folderId, tab, Date.now(), position);
+        added = result.added;
+        return result.map;
       });
+      if (added) rememberLastFolder(folderId);
       // Zaten klasörde olan sayfa yeniden eklenmediyse açık sekmeye dokunma: kullanıcı beklenmedik biçimde sekme kaybetmesin.
       const closeFailed = closeOriginal && added ? await closeAfterSave([tab.id]) : false;
       return { added, closeFailed };
@@ -393,35 +422,38 @@ export function useWorkspaces() {
     [update],
   );
 
-  /** Tek bir sekmeyi listeden kaldırır; "Geri al" için silineni döndürür. */
+  /** Sekmeyi klasörden kaldırıp çöp kutusuna taşır; "Geri al" için çöp kutusu kaydının kimliğini döndürür. */
   const removeTab = useCallback(
-    async (folderId: string, tabId: string): Promise<{ tab: SavedTab; index: number } | undefined> => {
-      let removed: { tab: SavedTab; index: number } | undefined;
+    async (folderId: string, tabId: string): Promise<{ trashId: string } | undefined> => {
+      let entry: TrashEntry | undefined;
+      const now = Date.now();
       await update((current) => {
         const folder = current[folderId];
         const position = folder ? folder.tabs.findIndex((t) => t.id === tabId) : -1;
         if (!folder || position === -1) return current;
-        removed = { tab: folder.tabs[position], index: position };
+        entry = {
+          id: crypto.randomUUID(),
+          kind: 'tab',
+          deletedAt: now,
+          folderId,
+          folderName: folder.name,
+          index: position,
+          tab: folder.tabs[position],
+        };
         return {
           ...current,
-          [folderId]: { ...folder, updatedAt: Date.now(), tabs: folder.tabs.filter((t) => t.id !== tabId) },
+          [folderId]: { ...folder, updatedAt: now, tabs: folder.tabs.filter((t) => t.id !== tabId) },
         };
       });
-      return removed;
-    },
-    [update],
-  );
-
-  /** Kaldırılan sekmeyi geri koyar (Geri al). */
-  const insertTab = useCallback(
-    async (folderId: string, tab: SavedTab, position: number): Promise<void> => {
-      await update((current) => {
-        const folder = current[folderId];
-        if (!folder) return current;
-        const tabs = [...folder.tabs];
-        tabs.splice(Math.min(position, tabs.length), 0, tab);
-        return { ...current, [folderId]: { ...folder, updatedAt: Date.now(), tabs } };
-      });
+      const removed = entry as TrashEntry | undefined;
+      if (!removed) return undefined;
+      try {
+        await updateTrash((entries) => pushTrash(entries, removed, now));
+      } catch (e) {
+        await update((current) => restoreTrashEntry(current, removed, Date.now()));
+        throw new Error('Sekme çöp kutusuna taşınamadı, kaldırılmadı.', { cause: e });
+      }
+      return { trashId: removed.id };
     },
     [update],
   );
@@ -448,6 +480,25 @@ export function useWorkspaces() {
   const revertImport = useCallback(
     async (undo: ImportUndo): Promise<void> => {
       await update((current) => undoImport(current, undo));
+    },
+    [update],
+  );
+
+  const listSnapshots = useCallback((): Promise<Snapshot[]> => readSnapshots(), []);
+
+  /**
+   * Bir otomatik yedeğe döner (tüm veri yedektekiyle değişir). Dönmeden önce mevcut hal de yedeklenir:
+   * yanlış yedeği seçen kullanıcı oradan geri dönebilir.
+   */
+  const restoreSnapshot = useCallback(
+    async (takenAt: number): Promise<Snapshot> => {
+      const snapshot = (await readSnapshots()).find((s) => s.takenAt === takenAt);
+      if (!snapshot) throw new Error('Yedek bulunamadı.');
+      const current = normalizeWorkspaces(await readKey<WorkspaceMap>(STORAGE_KEY, EMPTY));
+      await takeSnapshot(current, Date.now(), 'before-restore');
+      const restored = normalizeWorkspaces(snapshot.workspaces);
+      await update(() => restored);
+      return snapshot;
     },
     [update],
   );
@@ -526,7 +577,10 @@ export function useWorkspaces() {
     renameFolder,
     setFolderStyle,
     removeFolder,
-    reinsertFolders,
+    trash,
+    restoreFromTrash,
+    deleteFromTrash,
+    emptyTrash,
     moveFolder,
     setFolderPosition,
     applyLayout,
@@ -534,9 +588,10 @@ export function useWorkspaces() {
     moveTab,
     setTabPosition,
     removeTab,
-    insertTab,
     importWorkspaces,
     revertImport,
+    listSnapshots,
+    restoreSnapshot,
     restoreFolder,
     openTab,
     activateTab,
