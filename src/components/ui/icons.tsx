@@ -288,3 +288,10 @@ export const SidePanelIcon = (p: IconProps) => (
     <path d="M15 3v18" />
   </Icon>
 );
+
+export const PopupWindowIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect width="18" height="18" x="3" y="3" rx="2" />
+    <rect width="8" height="7" x="12" y="5" rx="1" />
+  </Icon>
+);

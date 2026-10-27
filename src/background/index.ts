@@ -1,4 +1,5 @@
-import { AUTO_EXPORT_KEY, LANGUAGE_KEY, LAST_FOLDER_KEY, TRASH_KEY, WORKSPACES_KEY } from '../storage/keys';
+import { ACTION_MODE_KEY, AUTO_EXPORT_KEY, LANGUAGE_KEY, LAST_FOLDER_KEY, TRASH_KEY, WORKSPACES_KEY } from '../storage/keys';
+import { applyActionMode, isActionMode } from '../services/actionMode';
 import {
   isWorkspaceChange,
   migrateLegacyWorkspaces,
@@ -193,6 +194,9 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
   if (changes[LAST_FOLDER_KEY]) scheduleMenuRebuild();
   // Diske yedek açıldı ya da sıklaştırıldıysa zamanı geldiyse hemen al (kendi lastAt yazımımız tekrar tetiklemez).
+  // Mod başka bir yerden (popup / panel) değişti: simgeye uygula (aynı değer zararsızdır).
+  const mode = changes[ACTION_MODE_KEY]?.newValue;
+  if (isActionMode(mode)) applyActionMode(mode).catch((e) => console.error('[TabFlow] simge modu uygulanamadı.', e));
   if (changes[AUTO_EXPORT_KEY]) maybeAutoExport().catch((e) => console.error('[TabFlow] diske yedek alınamadı.', e));
   const language = changes[LANGUAGE_KEY]?.newValue;
   if (isLang(language)) {
@@ -201,7 +205,14 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
 });
 
+/** Araç çubuğu simgesinin modu (popup / yan panel) her açılışta yeniden uygulanır. */
+async function restoreActionMode(): Promise<void> {
+  const mode = await readKey<unknown>(ACTION_MODE_KEY, 'popup');
+  await applyActionMode(isActionMode(mode) ? mode : 'popup');
+}
+
 const onLaunch = () => {
+  restoreActionMode().catch((e) => console.error('[TabFlow] simge modu uygulanamadı.', e));
   rebuildMenus(true).catch((e) => console.error('[TabFlow] menü kurulamadı.', e));
   maintenance().catch((e) => console.error('[TabFlow] bakım yapılamadı.', e));
 };

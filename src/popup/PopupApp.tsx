@@ -11,7 +11,8 @@ import {
 import { FolderComposer, type ComposerMode } from '../components/FolderComposer';
 import { Button } from '../components/ui/Button';
 import { ErrorBanner } from '../components/ui/ErrorBanner';
-import { CheckIcon, ExpandIcon, PlusIcon, SearchIcon, SidePanelIcon } from '../components/ui/icons';
+import { CheckIcon, ExpandIcon, PlusIcon, PopupWindowIcon, SearchIcon, SidePanelIcon } from '../components/ui/icons';
+import { closeSidePanel, setActionMode } from '../services/actionMode';
 import { IconButton } from '../components/ui/IconButton';
 import { PopupFolderRow } from '../components/popup/PopupFolderRow';
 import { Toast } from '../components/ui/Toast';
@@ -103,6 +104,11 @@ export default function PopupApp({ layout = 'popup' }: PopupAppProps) {
   // Aktif sayfa hangi klasörlerde kayıtlı? (Kaydedilemeyen sayfada null.) Popup her açılışta bir kez okur; yan panel
   // açık kaldığı için sekme değiştikçe ya da sayfa gezindikçe yeniden okur.
   const [activeUrl, setActiveUrl] = useState<string | null>(null);
+  // Bu sayfanın penceresi (yan paneli açmak/kapatmak için önceden bilinmeli).
+  const [windowId, setWindowId] = useState<number | null>(null);
+  useEffect(() => {
+    chrome.windows.getCurrent().then((win) => setWindowId(win.id ?? null), () => undefined);
+  }, []);
   useEffect(() => {
     let cancelled = false;
     const refresh = () => {
@@ -383,12 +389,24 @@ export default function PopupApp({ layout = 'popup' }: PopupAppProps) {
       .catch((e) => showError(getErrorMessage(e)));
   };
 
-  /** Bu pencerenin yan panelini açar ve popup'ı kapatır (kullanıcı tıklamasıyla çağrılmalı). */
+  /**
+   * Yan panel moduna geçer: paneli bu pencerede açar, simge bundan sonra da paneli açar. Chrome yan paneli yalnızca
+   * kullanıcı tıklamasının İÇİNDE açar: araya bir bekleme girerse (ör. pencereyi sormak) açmayı reddeder. Bu yüzden
+   * pencere numarası önceden alınır ve sidePanel.open tıklamada ilk iş olarak çağrılır.
+   */
   const openSidePanel = () => {
-    chrome.windows
-      .getCurrent()
-      .then((win) => (win.id === undefined ? undefined : chrome.sidePanel.open({ windowId: win.id })))
+    if (windowId === null) return;
+    chrome.sidePanel
+      .open({ windowId })
+      .then(() => setActionMode('panel'))
       .then(() => window.close())
+      .catch((e) => showError(getErrorMessage(e)));
+  };
+
+  /** Yan panelden popup moduna döner ve paneli kapatır. */
+  const backToPopup = () => {
+    setActionMode('popup')
+      .then(() => (windowId === null ? window.close() : closeSidePanel(windowId)))
       .catch((e) => showError(getErrorMessage(e)));
   };
 
@@ -401,8 +419,17 @@ export default function PopupApp({ layout = 'popup' }: PopupAppProps) {
     >
       <header className="flex shrink-0 items-center gap-1">
         <h1 className="mr-auto text-base font-semibold text-gray-900">TabFlow</h1>
-        {!isPanel && (
-          <IconButton label={t('popup.openSidePanel')} title={t('popup.sidePanelHint')} onClick={openSidePanel}>
+        {isPanel ? (
+          <IconButton label={t('popup.backToPopup')} title={t('popup.backToPopupHint')} onClick={backToPopup}>
+            <PopupWindowIcon />
+          </IconButton>
+        ) : (
+          <IconButton
+            label={t('popup.openSidePanel')}
+            title={t('popup.sidePanelHint')}
+            onClick={openSidePanel}
+            disabled={windowId === null}
+          >
             <SidePanelIcon />
           </IconButton>
         )}
@@ -428,7 +455,7 @@ export default function PopupApp({ layout = 'popup' }: PopupAppProps) {
       </div>
 
       {savedIn.length > 0 && (
-        <p className="flex shrink-0 items-start gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs text-gray-700">
+        <p className="flex shrink-0 items-start gap-1.5 px-1 text-xs text-gray-600">
           <CheckIcon width={14} height={14} className="mt-px shrink-0 text-emerald-600" strokeWidth={2.5} />
           <span className="min-w-0">
             {t('popup.alreadySaved')}{' '}

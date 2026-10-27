@@ -12,3 +12,5 @@ export const LAST_FOLDER_KEY = 'lastFolderId';
 export const LANGUAGE_KEY = 'language';
 /** Diske otomatik yedek ayarı ve son zamanı (AutoExportSettings). */
 export const AUTO_EXPORT_KEY = 'autoExport';
+/** Araç çubuğu simgesinin modu: 'popup' ya da 'panel' (yan panel). */
+export const ACTION_MODE_KEY = 'actionMode';

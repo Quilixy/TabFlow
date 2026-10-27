@@ -327,9 +327,12 @@ export const tr = {
   'autoExport.changed': 'Diske otomatik yedek: {interval}.',
   // Yan panel
   'popup.openSidePanel': 'Yan panelde aç',
-  'popup.sidePanelHint': 'Yan panel tarama sırasında açık kalır.',
+  'popup.sidePanelHint': 'Yan panel tarama sırasında açık kalır; araç çubuğu simgesi de artık yan paneli açar.',
   // Adres çubuğu
   'omnibox.default': 'TabFlow’da ara: <match>%s</match>',
+  // Yan panel modu
+  'popup.backToPopup': 'Açılır pencereye dön',
+  'popup.backToPopupHint': 'Araç çubuğu simgesi yeniden açılır pencereyi açar.',
 } satisfies Record<string, MessageEntry>;
 
 export type Messages = { [K in keyof typeof tr]: MessageEntry };

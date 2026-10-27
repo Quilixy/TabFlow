@@ -329,7 +329,10 @@ export const en: Messages = {
   'autoExport.changed': 'Automatic backup to disk: {interval}.',
   // Yan panel
   'popup.openSidePanel': 'Open in side panel',
-  'popup.sidePanelHint': 'The side panel stays open while you browse.',
+  'popup.sidePanelHint': 'The side panel stays open while you browse; the toolbar icon will open it from now on.',
   // Adres çubuğu
   'omnibox.default': 'Search TabFlow: <match>%s</match>',
+  // Yan panel modu
+  'popup.backToPopup': 'Switch back to popup',
+  'popup.backToPopupHint': 'The toolbar icon will open the popup again.',
 };
