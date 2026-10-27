@@ -6,7 +6,7 @@ Sekmelerini klasörlere ve serbest bir tuvale kaydet, kapat ve saniyeler içinde
 
 - **Popup:** açık sekmelerin tümünü ya da yalnızca aktif sayfayı tek tıkla bir klasöre kaydet; klasörleri ara, iç içe klasörleri aç, sekmeleri tek tek ya da alt klasörleriyle birlikte geri aç.
 - **Tam ekran uygulama** (`Alt+Shift+T` ya da popup'taki "Tam ekranda aç"): solda klasör ağacı, ortada her klasörün kendi tuvali (sürükle-bırak, yakınlaştır, ızgaraya diz), sağda açık sekmeler.
-- İç içe klasörler, klasör rengi ve simgesi, tema paketleri (açık/koyu, vurgu rengi).
+- İç içe klasörler, klasör rengi ve 35 simge, tema paketleri: Sakura (kiraz ağacı, düşen yapraklar) ve Uzay (gezegen, galaksi, kayan yıldızlar), her biri açık/koyu; varsayılan temada vurgu rengi.
 - **Siteye göre gruplama:** *Tümünü kaydet* sırasında “Siteye göre alt klasörlere ayır” seçilirse aynı siteden en az iki sekme o sitenin adıyla bir alt klasöre gider.
 - **Açma seçenekleri:** klasörü bu pencerede, alt klasörleriyle birlikte, klasörün adı ve renginde bir **sekme grubu** olarak ya da **yeni pencerede** aç.
 - **Sıralama ve sabitleme:** ağaçta bir klasörü başka bir satırın üst/alt kenarına sürükleyerek sırala (`Alt+↑/↓` da olur); "Üste sabitle" ile sık kullanılanları en üstte tut.
@@ -48,6 +48,12 @@ npm run build        # dist/ klasörünü üretir
 Değişiklikleri izleyerek derlemek için `npm run watch` kullan; ardından eklentiler sayfasında TabFlow'u yenile.
 
 Her push ve pull request'te GitHub Actions tip kontrolü, lint, birim testleri, derleme ve uçtan uca testleri çalıştırır (`.github/workflows/ci.yml`).
+
+Uçtan uca testler şunları da kapsar:
+
+- **Erişilebilirlik** (`e2e/a11y.spec.ts`): axe ile WCAG 2.1 A/AA denetimi; her tema paketi açık ve koyu, popup ve diyaloglar.
+- **Görsel karşılaştırma** (`e2e/visual.spec.ts`): tema paketlerinin ekran görüntüleri tabanlarla karşılaştırılır. Tabanlar platforma özgüdür; bilerek yapılan bir görünüm değişikliğinden sonra `npx playwright test e2e/visual.spec.ts --update-snapshots` ile yenilenir. CI (Linux) tabanları elle çalıştırılan *Görsel tabanlar* iş akışıyla üretilip indirilir; bu tabanlar yokken CI bu testleri atlar.
+- **Performans** (`e2e/perf.spec.ts`): 5000 sekmelik kitaplıkta açılış, 2000 kartlık tuval ve arama süreleri.
 
 ## Komutlar
 

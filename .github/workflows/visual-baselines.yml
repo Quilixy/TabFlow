@@ -1,0 +1,26 @@
+name: Görsel tabanlar
+
+# Elle çalıştırılır: Linux için görsel karşılaştırma tabanlarını üretir ve indirilebilir dosya olarak saklar.
+# İndirilen PNG'ler e2e/visual.spec.ts-snapshots/ altına konup commit'lenince CI karşılaştırmaya başlar.
+on: workflow_dispatch
+
+jobs:
+  baselines:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Tabanları üret
+        run: npx playwright test e2e/visual.spec.ts --update-snapshots=all
+      - uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines-linux
+          path: e2e/visual.spec.ts-snapshots/*-linux.png
+          retention-days: 7
