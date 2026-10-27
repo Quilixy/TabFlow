@@ -40,6 +40,8 @@ npm run build        # dist/ klasörünü üretir
 
 Değişiklikleri izleyerek derlemek için `npm run watch` kullan; ardından eklentiler sayfasında TabFlow'u yenile.
 
+Her push ve pull request'te GitHub Actions tip kontrolü, lint, birim testleri, derleme ve uçtan uca testleri çalıştırır (`.github/workflows/ci.yml`).
+
 ## Komutlar
 
 | Komut | Ne yapar |
@@ -47,6 +49,8 @@ Değişiklikleri izleyerek derlemek için `npm run watch` kullan; ardından ekle
 | `npm run build` | Tip kontrolü + üretim derlemesi (`dist/`) |
 | `npm run watch` | Değişiklikte yeniden derler |
 | `npm test` | Birim testleri (Vitest) |
+| `npm run test:e2e` | Derleyip eklentiyi gerçek Chromium'a yükleyerek uçtan uca testleri çalıştırır (Playwright; ilk seferde `npx playwright install chromium`) |
+| `npm run typecheck` | TypeScript tip kontrolü |
 | `npm run lint` | ESLint |
 
 ## İzinler
