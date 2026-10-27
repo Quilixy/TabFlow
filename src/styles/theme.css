@@ -225,6 +225,21 @@ html[data-pack='sakura'][data-theme='dark'] :is(.tf-petal, .tf-burst-petal) {
 html[data-pack='sakura'][data-theme='dark'][data-decor='on'] [data-item-id][data-drop-folder]::after {
   filter: brightness(1.25) drop-shadow(0 0 4px rgb(255 160 205 / 0.35));
 }
+/* Süsler açıkken yüzeyler (kartlar, paneller, tuval) yarı saydam olur: kiraz ağacı arkalarından görünür */
+html[data-pack='sakura'][data-theme='light'][data-decor='on'] {
+  --color-white: rgb(255 246 250 / 0.72);
+  --color-gray-50: rgb(255 228 238 / 0.45);
+}
+html[data-pack='sakura'][data-theme='dark'][data-decor='on'] {
+  --color-white: rgb(35 21 32 / 0.78);
+  --color-gray-50: rgb(23 13 21 / 0.5);
+}
+html[data-pack='sakura'][data-theme='light'][data-decor='on'] :is([role='menu'], [role='dialog'], [role='alertdialog']) {
+  background-color: rgb(255 246 250 / 0.96);
+}
+html[data-pack='sakura'][data-theme='dark'][data-decor='on'] :is([role='menu'], [role='dialog'], [role='alertdialog']) {
+  background-color: rgb(35 21 32 / 0.95);
+}
 
 /* ---- Uzay · koyu ---- */
 html[data-pack='space'][data-theme='dark'] {
@@ -307,7 +322,7 @@ html[data-pack='space'] #root { position: relative; z-index: 1; }
  * UYARI: backdrop-filter / transform / filter bir "yığın bağlamı" oluşturur. aside ve header gibi ana
  * yerleşim kutularına verilirse, içlerindeki açılır menüler sonraki kardeşlerin (tuval) altına gömülür.
  */
-html[data-pack='space'][data-decor='on'] :is([role='menu'], [role='dialog'], [role='alertdialog']) {
+html[data-decor='on']:is([data-pack='sakura'], [data-pack='space']) :is([role='menu'], [role='dialog'], [role='alertdialog']) {
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }

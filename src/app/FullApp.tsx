@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Canvas } from '../components/app/Canvas';
 import { FolderTree } from '../components/app/FolderTree';
+import { SakuraScene } from '../components/app/SakuraScene';
 import { FolderComposer, type ComposerMode } from '../components/FolderComposer';
 import { AppearanceMenu } from '../components/AppearanceMenu';
 import { PetalBurst } from '../components/PetalBurst';
@@ -108,6 +109,7 @@ export default function FullApp() {
   const markEntering = useUiStore((s) => s.markEntering);
   const setLeaving = useUiStore((s) => s.setLeaving);
   const animation = useUiStore((s) => s.animation);
+  const pack = useUiStore((s) => s.pack);
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const lastBackupAt = useUiStore((s) => s.lastBackupAt);
@@ -860,12 +862,15 @@ export default function FullApp() {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1">
+      {/* Sakura manzarası bu satırın en altındadır; üstündeki kutular "relative" olduğu için onu örter
+          (yarı saydam arka planları sayesinde ağaç panelin ve tuvalin arkasından görünür). */}
+      <div className="relative flex min-h-0 flex-1">
+        {pack === 'sakura' && <SakuraScene />}
         {/* Kapalıyken genişlik 0'a iner; içerik sabit genişlikte kalır (kayarken yeniden dizilmez) ve inert olur. */}
         <aside
           id="tf-folder-panel"
           inert={sidebarCollapsed}
-          className={`shrink-0 overflow-hidden border-gray-200 bg-white transition-[width,visibility] duration-200 ease-out motion-reduce:transition-none ${
+          className={`relative shrink-0 overflow-hidden border-gray-200 bg-white transition-[width,visibility] duration-200 ease-out motion-reduce:transition-none ${
             sidebarCollapsed ? 'invisible w-0' : 'w-72 border-r'
           }`}
         >
@@ -892,7 +897,7 @@ export default function FullApp() {
           </div>
         </aside>
 
-        <main className="flex min-w-0 flex-1 flex-col">
+        <main className="relative flex min-w-0 flex-1 flex-col">
           <div className="flex shrink-0 items-center gap-1 border-b border-gray-200 bg-white px-3 py-1.5 text-sm">
             <nav aria-label={t('app.breadcrumb')} className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
               <button
@@ -989,7 +994,7 @@ export default function FullApp() {
         </main>
 
         {showOpenTabs && (
-          <aside className="w-80 shrink-0 border-l border-gray-200 bg-gray-50 p-3">
+          <aside className="relative w-80 shrink-0 border-l border-gray-200 bg-gray-50 p-3">
             <OpenTabsList
               className="h-full"
               query=""
