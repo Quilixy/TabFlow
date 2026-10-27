@@ -1,5 +1,6 @@
 import { LAST_FOLDER_KEY, TRASH_KEY, WORKSPACES_KEY } from '../storage/keys';
 import { readKey, updateKey } from '../storage/kv';
+import { isRestoreMessage, restoreFolder, type RestoreReply } from '../services/restoreService';
 import { takeSnapshotIfDue } from '../storage/snapshotStore';
 import type { PageInfo } from '../types';
 import { contextMenuItems, folderIdFromMenuItem } from '../utils/contextMenu';
@@ -93,6 +94,17 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     }
     await savePageToFolder(target, page, tab?.id);
   })();
+});
+
+// ---- Popup'tan gelen "sekmeleri aç" istekleri ---------------------------------------------
+// Popup kapanınca (ör. sayfaya tıklanınca) kodu da durur; uzun açma işlemi burada yürür ki yarıda kalmasın.
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (!isRestoreMessage(message) || sender.id !== chrome.runtime.id) return false;
+  restoreFolder(message).then(
+    (result) => sendResponse({ ok: true, result } satisfies RestoreReply),
+    (e: unknown) => sendResponse({ ok: false, error: e instanceof Error ? e.message : 'Sekmeler açılamadı.' } satisfies RestoreReply),
+  );
+  return true; // Yanıt eşzamansız gönderilecek
 });
 
 // ---- Kısayollar ----------------------------------------------------------------------

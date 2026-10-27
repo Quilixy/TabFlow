@@ -23,6 +23,7 @@ import { useWorkspaces } from '../hooks/useWorkspaces';
 import { getErrorMessage, useUiStore } from '../store/useUiStore';
 import { formatSaveAllMessage } from '../utils/format';
 import { formatRestoreResult, type RestoreMode } from '../utils/restore';
+import { currentWindowId, restoreInBackground } from '../services/restoreService';
 import { normalizeQuery, tabMatches } from '../utils/search';
 import { NAVIGATE_KEY } from '../utils/uiSync';
 import {
@@ -42,7 +43,7 @@ const ADDED_FEEDBACK_MS = 1600;
 const RESTORE_CONFIRM_THRESHOLD = 25;
 
 export default function PopupApp() {
-  const { workspaces, isLoading, error, createFolder, createFolderWithTab, saveAndClose, addOpenTab, restoreFolder, openTab } =
+  const { workspaces, isLoading, error, createFolder, createFolderWithTab, saveAndClose, addOpenTab, openTab } =
     useWorkspaces();
 
   const query = useUiStore((s) => s.query);
@@ -292,10 +293,18 @@ export default function PopupApp() {
           });
           if (!ok) return;
         }
-        showToast(formatRestoreResult(await restoreFolder(folder.id, recursive, true, mode), folder.name));
+        // İş service worker'da yürür: popup kapansa (ör. sayfaya tıklanınca) bile sekmeler açılmaya devam eder.
+        const result = await restoreInBackground({
+          folderId: folder.id,
+          recursive,
+          mode,
+          activate: true,
+          windowId: await currentWindowId(),
+        });
+        showToast(formatRestoreResult(result, folder.name));
       });
     },
-    [run, confirm, restoreFolder, showToast],
+    [run, confirm, showToast],
   );
 
   const { menu, openAt } = useContextMenu();

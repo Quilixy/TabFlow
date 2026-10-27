@@ -83,4 +83,34 @@ test.describe('tam ekran uygulama', () => {
       .poll(async () => ((await readStorage<unknown[]>('snapshots')) ?? []).length, { timeout: 5_000 })
       .toBe(1);
   });
+
+  test('iki parmakla yakınlaştırır', async ({ context, openApp, seed }) => {
+    const app = await openApp();
+    await seed({ a: folder('a', 'Kutu') });
+    const zoomLabel = app.getByTitle('Görünümü sıfırla');
+    await zoomLabel.click(); // %100'den başla
+    await expect(zoomLabel).toHaveText('100%');
+
+    const box = (await app.getByRole('application').boundingBox())!;
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    const cdp = await context.newCDPSession(app);
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
+    const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', spread: number) =>
+      cdp.send('Input.dispatchTouchEvent', {
+        type,
+        touchPoints:
+          type === 'touchEnd'
+            ? []
+            : [
+                { x: cx - spread, y: cy, id: 0 },
+                { x: cx + spread, y: cy, id: 1 },
+              ],
+      });
+    await touch('touchStart', 50);
+    for (const spread of [60, 70, 80, 90, 100]) await touch('touchMove', spread);
+    await touch('touchEnd', 0);
+
+    await expect(zoomLabel).toHaveText('200%'); // Parmaklar iki kat açıldı
+  });
 });

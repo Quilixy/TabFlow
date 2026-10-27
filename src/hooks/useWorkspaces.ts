@@ -6,7 +6,8 @@ import { readSnapshots, takeSnapshot } from '../storage/snapshotStore';
 import type { PageInfo, Point, Workspace, WorkspaceMap } from '../types';
 import { mergeWorkspaces, undoImport, type ImportUndo, type MergeStats } from '../utils/backup';
 import { isFolderColor, isFolderIcon } from '../utils/folderStyle';
-import { tabGroupColor, type RestoreMode, type RestoreResult } from '../utils/restore';
+import type { RestoreMode, RestoreResult } from '../utils/restore';
+import { currentWindowId, restoreFolder as restoreFolderService } from '../services/restoreService';
 import type { Snapshot } from '../utils/snapshots';
 import { normalizeTrash, pushTrash, removeTrashEntry, type TrashEntry } from '../utils/trash';
 import {
@@ -68,8 +69,7 @@ export interface SaveAndCloseResult {
 
 export function useWorkspaces() {
   const { data, isLoading, update: updateRaw, error } = useStorage<WorkspaceMap>(STORAGE_KEY, EMPTY);
-  const { getOpenTabs, closeTabs, openTabs, openTabsInNewWindow, groupTabs, openSingleTab, activateTab } =
-    useTabManager();
+  const { getOpenTabs, closeTabs, openSingleTab, activateTab } = useTabManager();
   const { data: rawTrash } = useStorage<unknown>(TRASH_KEY, NO_TRASH);
   const trash = useMemo(() => normalizeTrash(rawTrash), [rawTrash]);
 
@@ -591,55 +591,11 @@ export function useWorkspaces() {
 
   // ---- Tarayıcı eylemleri ----------------------------------------------------
 
-  /**
-   * Klasörün (isteğe bağlı alt klasörlerle) sekmelerini açar.
-   * - 'tabs': bu pencerede; zaten açık URL'ler atlanır.
-   * - 'group': bu pencerede, klasörün adı ve renginde bir sekme grubu olarak; zaten açık olanlar da gruba alınır.
-   *   Sabitlenmiş sekmeler gruplanamaz: grup modunda sabitlenmeden açılır.
-   * - 'window': yeni bir pencerede, hepsi (başka pencerede açık olanlar da).
-   * activate: ilk sekmeye geç (tam ekran uygulamada 'tabs' modunda false).
-   */
+  /** Klasörün sekmelerini bu pencerede / sekme grubu olarak / yeni pencerede açar (bkz. restoreService). */
   const restoreFolder = useCallback(
-    async (id: string, recursive = false, activate = true, mode: RestoreMode = 'tabs'): Promise<RestoreResult> => {
-      const current = normalizeWorkspaces(await readKey<WorkspaceMap>(STORAGE_KEY, EMPTY));
-      const folder = current[id];
-      if (!folder) throw new Error('Klasör bulunamadı (başka bir yerden silinmiş olabilir).');
-
-      const folders = recursive ? collectSubtree(buildChildrenIndex(current), current, id) : [folder];
-      // Klasörler arasında tekrar eden URL bir kez açılır.
-      const seen = new Set<string>();
-      const tabs = folders.flatMap((f) => f.tabs).filter((t) => !seen.has(t.url) && (seen.add(t.url), true));
-      if (tabs.length === 0) throw new Error('Açılacak sekme yok.');
-
-      if (mode === 'window') {
-        const { ids, deferred } = await openTabsInNewWindow(tabs);
-        return { mode, opened: ids.length, skipped: 0, deferred, grouped: 0 };
-      }
-
-      // Yalnızca bu penceredeki açık sekmeler atlanır: başka pencerede açık olan burada yeniden açılır.
-      const open = await queryOpenTabs({ includePinned: true });
-      const openByUrl = new Map(open.map((t) => [t.url, t]));
-      const toOpen = tabs
-        .filter((t) => !openByUrl.has(t.url))
-        .map((t) => (mode === 'group' ? { ...t, pinned: false } : t));
-      const alreadyOpen = tabs.map((t) => openByUrl.get(t.url)).filter((t) => t !== undefined);
-      const skipped = alreadyOpen.length;
-
-      const { ids, deferred } = toOpen.length > 0 ? await openTabs(toOpen) : { ids: [], deferred: 0 };
-
-      let grouped = 0;
-      if (mode === 'group') {
-        const groupIds = [...alreadyOpen.filter((t) => !t.pinned).map((t) => t.id), ...ids];
-        await groupTabs(groupIds, folder.name, tabGroupColor(folder.color));
-        grouped = groupIds.length;
-      }
-
-      // Hiç yeni sekme açılmadıysa hiçbir şey olmamış gibi görünmesin: zaten açık olan ilkine geç.
-      const focusId = ids[0] ?? alreadyOpen[0]?.id;
-      if (activate && focusId !== undefined) await activateTab(focusId);
-      return { mode, opened: ids.length, skipped, deferred, grouped };
-    },
-    [openTabs, openTabsInNewWindow, groupTabs, activateTab],
+    async (id: string, recursive = false, activate = true, mode: RestoreMode = 'tabs'): Promise<RestoreResult> =>
+      restoreFolderService({ folderId: id, recursive, mode, activate, windowId: await currentWindowId() }),
+    [],
   );
 
   /** Sayfayı arka planda açar; bu pencerede zaten açıksa tekrar açmaz ('already-open'). */

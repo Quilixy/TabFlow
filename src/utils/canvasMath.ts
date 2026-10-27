@@ -22,6 +22,15 @@ export function zoomAt(view: View, factor: number, px: number, py: number): View
   return { scale, x: px - wx * scale, y: py - wy * scale };
 }
 
+/**
+ * İki parmakla yakınlaştırma: başlangıç görünümünden, parmak arası uzaklığın oranı kadar başlangıç orta noktası
+ * etrafında yakınlaştırır ve orta noktanın kayması kadar kaydırır. Uzaklıklar ekran pikseli.
+ */
+export function pinchView(start: View, startMid: Point, startDistance: number, mid: Point, distance: number): View {
+  const zoomed = startDistance > 0 ? zoomAt(start, distance / startDistance, startMid.x, startMid.y) : start;
+  return { ...zoomed, x: zoomed.x + (mid.x - startMid.x), y: zoomed.y + (mid.y - startMid.y) };
+}
+
 export function screenToWorld(view: View, px: number, py: number): Point {
   return { x: (px - view.x) / view.scale, y: (py - view.y) / view.scale };
 }

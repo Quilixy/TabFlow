@@ -21,6 +21,7 @@ import {
   estimateFolderCardHeight,
   FOLDER_CARD_W,
   fitView,
+  pinchView,
   resolveOverlaps,
   screenToWorld,
   TAB_CARD_H,
@@ -182,6 +183,10 @@ export function Canvas({
   const viewRef = useRef(view);
   const sessionRef = useRef<DragSession | null>(null);
   const panRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
+  /** Tuval üzerindeki etkin parmaklar/işaretçiler (ekran koordinatı, kaba göre). */
+  const pointersRef = useRef(new Map<number, Point>());
+  /** İki parmakla yakınlaştırma başladığındaki görünüm, orta nokta ve parmak arası uzaklık. */
+  const pinchRef = useRef<{ view: View; mid: Point; distance: number } | null>(null);
 
   const dropHoverId = useUiStore((s) => s.dropHoverId);
   const setDropHover = useUiStore((s) => s.setDropHover);
@@ -287,12 +292,45 @@ export function Canvas({
     setView(fitView(boundsOf(rects), { width: el.clientWidth, height: el.clientHeight }));
   };
 
-  // ---- Arka plan: kaydırma (pan) ---------------------------------------------
+  // ---- Arka plan: kaydırma (pan), iki parmakla yakınlaştırma ----------------------
+  const localPoint = (e: PointerEvent<HTMLDivElement>): Point => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    return { x: e.clientX - (rect?.left ?? 0), y: e.clientY - (rect?.top ?? 0) };
+  };
+
+  /** İlk iki parmağın orta noktası ve aralarındaki uzaklık. */
+  const pinchGeometry = (): { mid: Point; distance: number } | null => {
+    const [a, b] = [...pointersRef.current.values()];
+    if (!a || !b) return null;
+    return { mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, distance: Math.hypot(a.x - b.x, a.y - b.y) };
+  };
+
+  /** Kalan tek parmakla, zıplamadan kaydırmaya devam et. */
+  const restartPanFrom = (point: Point) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    panRef.current = {
+      startX: point.x + (rect?.left ?? 0),
+      startY: point.y + (rect?.top ?? 0),
+      origX: viewRef.current.x,
+      origY: viewRef.current.y,
+    };
+  };
+
   const handleBackgroundPointerDown = (e: PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 && e.button !== 1) return;
     e.preventDefault(); // Orta tuş otomatik kaydırmasını ve metin seçimini engelle
     containerRef.current?.focus();
     e.currentTarget.setPointerCapture(e.pointerId);
+    pointersRef.current.set(e.pointerId, localPoint(e));
+    // İkinci parmak: kaydırma ve alan seçimi bırakılır, iki parmakla yakınlaştırma başlar.
+    if (pointersRef.current.size === 2) {
+      const geometry = pinchGeometry();
+      if (geometry) pinchRef.current = { view: viewRef.current, ...geometry };
+      panRef.current = null;
+      setMarquee(null);
+      return;
+    }
+    if (pointersRef.current.size > 2) return;
     // Shift (ya da Ctrl/⌘) + sürükle: alan seçimi; aksi halde tuvali kaydır.
     if (e.button === 0 && (e.shiftKey || e.ctrlKey || e.metaKey)) {
       const start = worldAt(e.clientX, e.clientY);
@@ -305,6 +343,13 @@ export function Canvas({
   };
 
   const handleBackgroundPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (pointersRef.current.has(e.pointerId)) pointersRef.current.set(e.pointerId, localPoint(e));
+    const pinch = pinchRef.current;
+    if (pinch) {
+      const geometry = pinchGeometry();
+      if (geometry) setView(pinchView(pinch.view, pinch.mid, pinch.distance, geometry.mid, geometry.distance));
+      return;
+    }
     if (marquee) {
       const at = worldAt(e.clientX, e.clientY);
       const next = { ...marquee, x1: at.x, y1: at.y };
@@ -319,7 +364,18 @@ export function Canvas({
     setView((v) => ({ ...v, x, y }));
   };
 
-  const endPan = () => {
+  const endPan = (e: PointerEvent<HTMLDivElement>) => {
+    pointersRef.current.delete(e.pointerId);
+    if (pinchRef.current) {
+      // Bir parmak kalktı: yakınlaştırma biter, kalan parmak varsa onunla kaydırma sürer.
+      pinchRef.current = null;
+      const remaining = [...pointersRef.current.values()][0];
+      if (remaining) {
+        restartPanFrom(remaining);
+        return;
+      }
+    }
+    if (pointersRef.current.size > 0) return;
     panRef.current = null;
     setIsPanning(false);
     setMarquee(null);

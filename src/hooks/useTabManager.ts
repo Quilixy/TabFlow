@@ -1,9 +1,9 @@
 import { useCallback, useMemo } from 'react';
 import type { PageInfo } from '../types';
-import type { TabGroupColor } from '../utils/restore';
 import { toOpenTab, type OpenTab } from '../utils/tabs';
 
 export { resolveRestorableUrl, toOpenTab, type OpenTab } from '../utils/tabs';
+export { EAGER_TAB_LIMIT } from '../services/restoreService';
 
 export class TabManagerError extends Error {
   readonly originalError?: unknown;
@@ -15,13 +15,6 @@ export class TabManagerError extends Error {
 }
 
 const LANDING_URL = 'chrome://newtab/';
-
-/**
- * Bir seferde bu sayıdan fazla sekme açılırken ilk bu kadarı normal yüklenir; kalanlar oluşturulur ama
- * "ertelenir" (discard): sekme çubuğunda görünür, tıklanınca yüklenir. Onlarca sekmenin aynı anda yüklenip
- * RAM'i şişirmesini önler.
- */
-export const EAGER_TAB_LIMIT = 10;
 
 async function getCurrentWindowId(): Promise<number> {
   const win = await chrome.windows.getCurrent();
@@ -85,39 +78,6 @@ export async function queryActiveTab(): Promise<OpenTab> {
   return openTab;
 }
 
-/**
- * Sekmeleri SIRAYLA ve arka planda (active: false) açar. Toplamda EAGER_TAB_LIMIT'ten sonrakiler ertelenir
- * (discard edilir; tıklanınca yüklenir). Hata olursa bu çağrıda açılanları kapatır (yarım iş bırakmaz).
- * `existing`: aynı işlemde daha önce açılmış sekmeler (ertelemenin sayımına girer, hatada onlar da kapanır).
- */
-async function createTabsIn(
-  windowId: number,
-  tabs: PageInfo[],
-  existing: number[],
-): Promise<{ ids: number[]; deferred: number }> {
-  const ids = [...existing];
-  let deferred = 0;
-  try {
-    for (const tab of tabs) {
-      const created = await chrome.tabs.create({ windowId, url: tab.url, pinned: tab.pinned, active: false });
-      if (created.id === undefined) continue;
-      ids.push(created.id);
-      if (ids.length > EAGER_TAB_LIMIT) {
-        try {
-          await chrome.tabs.discard(created.id);
-          deferred++;
-        } catch {
-          // Bu sekme ertelenemedi (ör. çoktan yüklendi): normal yüklenmesine izin ver.
-        }
-      }
-    }
-    return { ids, deferred };
-  } catch (e) {
-    await Promise.allSettled(ids.map((id) => chrome.tabs.remove(id)));
-    throw e;
-  }
-}
-
 export function useTabManager() {
   // Hata çağırana fırlatılır ve arayüz tarafından gösterilir; burada ayrıca durum tutulmaz
   // (tutulsaydı kapatılan hata bandı aynı iletiyle geri gelirdi).
@@ -164,40 +124,6 @@ export function useTabManager() {
     [run],
   );
 
-  /** Sekmeleri bu pencerede açar (bkz. createTabsIn). */
-  const openTabs = useCallback(
-    (tabs: PageInfo[]) =>
-      run('Sekmeler açılamadı.', async () => createTabsIn(await getCurrentWindowId(), tabs, [])),
-    [run],
-  );
-
-  /** Sekmeleri yeni (öne gelen) bir pencerede açar; ilki pencereyle birlikte oluşur. */
-  const openTabsInNewWindow = useCallback(
-    (tabs: PageInfo[]) =>
-      run('Yeni pencere açılamadı.', async (): Promise<{ ids: number[]; deferred: number }> => {
-        const [first, ...rest] = tabs;
-        if (!first) return { ids: [], deferred: 0 };
-        const win = await chrome.windows.create({ url: first.url, focused: true });
-        const firstId = win?.tabs?.[0]?.id;
-        if (win?.id === undefined || firstId === undefined) throw new Error('Pencere oluşturulamadı.');
-        if (first.pinned) await chrome.tabs.update(firstId, { pinned: true });
-        return createTabsIn(win.id, rest, [firstId]);
-      }),
-    [run],
-  );
-
-  /** Sekmeleri adı ve rengi verilen bir sekme grubunda toplar (sabitlenmiş sekmeler gruplanamaz). */
-  const groupTabs = useCallback(
-    (tabIds: number[], title: string, color: TabGroupColor) =>
-      run('Sekme grubu oluşturulamadı.', async (): Promise<number | null> => {
-        if (tabIds.length === 0) return null;
-        const groupId = await chrome.tabs.group({ tabIds: tabIds as [number, ...number[]] });
-        await chrome.tabGroups.update(groupId, { title, color, collapsed: false });
-        return groupId;
-      }),
-    [run],
-  );
-
   /** Tek bir sekmeyi popup'ı kapatmadan arka planda açar. */
   const openSingleTab = useCallback(
     (tab: PageInfo) =>
@@ -222,7 +148,7 @@ export function useTabManager() {
   );
 
   return useMemo(
-    () => ({ getOpenTabs, closeTabs, openTabs, openTabsInNewWindow, groupTabs, openSingleTab, activateTab }),
-    [getOpenTabs, closeTabs, openTabs, openTabsInNewWindow, groupTabs, openSingleTab, activateTab],
+    () => ({ getOpenTabs, closeTabs, openSingleTab, activateTab }),
+    [getOpenTabs, closeTabs, openSingleTab, activateTab],
   );
 }

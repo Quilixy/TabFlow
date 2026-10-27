@@ -8,6 +8,7 @@ import {
   fitView,
   MAX_SCALE,
   MIN_SCALE,
+  pinchView,
   resolveOverlaps,
   screenToWorld,
   zoomAt,
@@ -149,5 +150,27 @@ describe('arrangeGrid', () => {
     expect(result.a).toEqual({ x: 32, y: 32 });
     expect(result.d).toEqual({ x: 32 + 3 * 272, y: 32 });
     expect(result.e).toEqual({ x: 32, y: 32 + 240 + 20 });
+  });
+});
+describe('pinchView', () => {
+  const start = { x: 0, y: 0, scale: 1 };
+
+  it('parmaklar açılınca orta nokta etrafında yakınlaştırır (orta nokta yerinde kalır)', () => {
+    const v = pinchView(start, { x: 100, y: 100 }, 100, { x: 100, y: 100 }, 150);
+    expect(v.scale).toBeCloseTo(1.5);
+    // Dünya noktası (100,100) ekranda hâlâ (100,100)
+    expect(100 * v.scale + v.x).toBeCloseTo(100);
+    expect(100 * v.scale + v.y).toBeCloseTo(100);
+  });
+
+  it('orta nokta kayınca görünümü de kaydırır', () => {
+    const v = pinchView(start, { x: 100, y: 100 }, 100, { x: 130, y: 90 }, 100);
+    expect(v).toEqual({ x: 30, y: -10, scale: 1 });
+  });
+
+  it('ölçek sınırlarına takılır ama kaydırma sürer', () => {
+    const v = pinchView({ x: 0, y: 0, scale: 2 }, { x: 0, y: 0 }, 100, { x: 10, y: 0 }, 400);
+    expect(v.scale).toBe(2);
+    expect(v.x).toBe(10);
   });
 });

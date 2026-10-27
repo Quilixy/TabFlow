@@ -43,4 +43,67 @@ test.describe('popup', () => {
       'Yeni pencerede aç',
     ]);
   });
+
+  test.describe('sekmeleri açma (service worker üzerinden)', () => {
+    const seedTwo = (seed: (w: Record<string, unknown>) => Promise<void>) =>
+      seed({
+        a: { ...folder('a', 'Okuma', [
+          { url: `${SITE}/bir`, title: 'Bir' },
+          { url: `${SITE}/iki`, title: 'İki' },
+        ]), color: 'emerald' },
+      });
+    // Eklentinin arka planda açtığı sekmeler Playwright'ın sayfa listesine her zaman düşmez: tarayıcıya sor.
+    const siteTabs = (context: import('@playwright/test').BrowserContext) =>
+      context.serviceWorkers()[0].evaluate(
+        async (site) => (await chrome.tabs.query({})).filter((t) => (t.url || t.pendingUrl || '').startsWith(site)).length,
+        SITE,
+      );
+
+    test('Aç: sekmeleri bu pencerede açar', async ({ context, openPopup, seed }) => {
+      await seedTwo(seed);
+      const popup = await openPopup();
+      await popup.getByRole('button', { name: 'Aç', exact: true }).click();
+      await expect.poll(() => siteTabs(context)).toBe(2);
+    });
+
+    test('popup hemen kapansa da tüm sekmeler açılır', async ({ context, openPopup, seed }) => {
+      const tabs = Array.from({ length: 15 }, (_, i) => ({ url: `${SITE}/s${i}`, title: `Sayfa ${i}` }));
+      await seed({ a: folder('a', 'Çok', tabs) });
+      const popup = await openPopup();
+      await popup.getByRole('button', { name: 'Aç', exact: true }).click();
+      await popup.close(); // Kullanıcı sayfaya tıkladı: popup kapandı
+      await expect.poll(() => siteTabs(context), { timeout: 10_000 }).toBe(15);
+      // 10'dan sonrakiler ertelenir (tıklanınca yüklenir) ama adreslerini korur.
+      const deferred = () =>
+        context.serviceWorkers()[0].evaluate(
+          async (site) => (await chrome.tabs.query({ discarded: true })).filter((t) => t.url?.startsWith(site)).length,
+          SITE,
+        );
+      await expect.poll(deferred, { timeout: 10_000 }).toBe(5);
+    });
+
+    test('sekme grubu olarak açar; grup klasörün adını ve rengini alır', async ({ context, openPopup, seed }) => {
+      await seedTwo(seed);
+      const popup = await openPopup();
+      await popup.getByRole('button', { name: '“Okuma” açma seçenekleri' }).click();
+      await popup.getByRole('menuitem', { name: 'Sekme grubu olarak aç' }).click();
+
+      const worker = context.serviceWorkers()[0];
+      await expect
+        .poll(() => worker.evaluate(async () => (await chrome.tabGroups.query({})).map((g) => `${g.title}:${g.color}`)))
+        .toEqual(['Okuma:green']);
+      await expect.poll(() => siteTabs(context)).toBe(2);
+    });
+
+    test('yeni pencerede açar', async ({ context, openPopup, seed }) => {
+      await seedTwo(seed);
+      const popup = await openPopup();
+      await popup.getByRole('button', { name: '“Okuma” açma seçenekleri' }).click();
+      await popup.getByRole('menuitem', { name: 'Yeni pencerede aç' }).click();
+
+      const worker = context.serviceWorkers()[0];
+      await expect.poll(() => worker.evaluate(async () => (await chrome.windows.getAll()).length)).toBe(2);
+      await expect.poll(() => siteTabs(context)).toBe(2);
+    });
+  });
 });
