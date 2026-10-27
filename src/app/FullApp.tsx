@@ -11,6 +11,8 @@ import { Button } from '../components/ui/Button';
 import { ErrorBanner } from '../components/ui/ErrorBanner';
 import { TrashPanel } from '../components/TrashPanel';
 import { CommandPalette } from '../components/CommandPalette';
+import { ImportDialog, type ImportSource } from '../components/ImportDialog';
+import type { ImportFolderSpec } from '../utils/externalImport';
 import type { PaletteCommand } from '../utils/palette';
 import { IconButton } from '../components/ui/IconButton';
 import { ArchiveIcon, ChevronDownIcon, CommandIcon, ExternalLinkIcon, PlusIcon, TrashIcon } from '../components/ui/icons';
@@ -87,6 +89,8 @@ export default function FullApp() {
     openTab,
     activateTab,
     closeOpenTab,
+    importTree,
+    discardImportedTree,
   } = useWorkspaces();
 
   const selectedFolderId = useUiStore((s) => s.selectedFolderId);
@@ -115,6 +119,7 @@ export default function FullApp() {
   const [stylePicker, setStylePicker] = useState<{ folderId: string; x: number; y: number } | null>(null);
   const [showTrash, setShowTrash] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
+  const [importSource, setImportSource] = useState<ImportSource | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { menu: backupMenu, openAt: openBackupMenuAt } = useContextMenu();
   const { menu: restoreMenu, openAt: openRestoreMenuAt } = useContextMenu();
@@ -607,6 +612,33 @@ export default function FullApp() {
     [run, confirm, importWorkspaces, revertImport, showToast],
   );
 
+  // ---- Başka araçlardan içe aktarma ----------------------------------------------------
+  /** Yer imleri isteğe bağlı izindir: yalnızca bu özellik ilk kullanıldığında (tıklamanın içinde) istenir. */
+  const openBookmarksImport = useCallback(() => {
+    chrome.permissions.request({ permissions: ['bookmarks'] }).then(
+      (granted) => (granted ? setImportSource('bookmarks') : showToast(t('import.permissionDenied'))),
+      (e) => showError(getErrorMessage(e)),
+    );
+  }, [showToast, showError]);
+
+  const handleImportTree = useCallback(
+    (spec: ImportFolderSpec) => {
+      void run('import-tree', async () => {
+        const { rootId, folders, tabs } = await importTree(spec);
+        setImportSource(null);
+        navigate(rootId);
+        expandMany([rootId]); // Yeni veri henüz ekrana ulaşmadı: alt klasörler görünsün diye açık işaretle
+        markEntering([rootId]);
+        emitFolderBurst(rootId);
+        showToast(t('import.done', { name: spec.name, folders, tabs }), {
+          label: t('common.undo'),
+          run: () => void run('undo-import-tree', () => discardImportedTree(rootId)),
+        });
+      });
+    },
+    [run, importTree, discardImportedTree, navigate, expandMany, markEntering, showToast],
+  );
+
   // ---- Diske otomatik yedek ayarı (service worker uygular) ----------------------------
   const { data: rawAutoExport } = useStorage<unknown>(AUTO_EXPORT_KEY, null);
   const autoExport = normalizeAutoExport(rawAutoExport);
@@ -647,6 +679,8 @@ export default function FullApp() {
         { type: 'heading', label: lastBackupAt ? t('backupMenu.last', { ago: formatAgo(lastBackupAt) }) : t('backupMenu.never') },
         { label: t('backupMenu.download'), onSelect: handleExport },
         { label: t('backupMenu.import'), onSelect: () => fileInputRef.current?.click() },
+        { label: t('backupMenu.importText'), onSelect: () => setImportSource('text') },
+        { label: t('backupMenu.importBookmarks'), onSelect: openBookmarksImport },
         { type: 'separator' },
         { type: 'heading', label: t('backupMenu.autoHeading') },
         ...(snapshots.length === 0
@@ -714,6 +748,8 @@ export default function FullApp() {
       action('trash', t('cmd.trash'), () => setShowTrash(true)),
       action('download-backup', t('cmd.downloadBackup'), handleExport),
       action('import-backup', t('cmd.importBackup'), openImportPicker),
+      action('import-text', t('backupMenu.importText'), () => setImportSource('text')),
+      action('import-bookmarks', t('backupMenu.importBookmarks'), openBookmarksImport),
       action('toggle-open-tabs', t('cmd.toggleOpenTabs'), () => setShowOpenTabs((v) => !v)),
     ];
     if (current) {
@@ -944,6 +980,14 @@ export default function FullApp() {
         />
       )}
       {showPalette && <CommandPalette commands={buildPaletteCommands()} onClose={() => setShowPalette(false)} />}
+      {importSource && (
+        <ImportDialog
+          source={importSource}
+          busy={isBusy}
+          onImport={handleImportTree}
+          onClose={() => setImportSource(null)}
+        />
+      )}
       {showTrash && (
         <TrashPanel
           entries={trash}

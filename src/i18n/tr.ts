@@ -353,6 +353,23 @@ export const tr = {
   'cmd.trash': 'Çöp kutusunu aç',
   'cmd.downloadBackup': 'Yedeği indir (JSON)',
   'cmd.importBackup': 'Yedekten içe aktar…',
+  // Başka araçlardan içe aktarma
+  'import.textTitle': 'Metinden içe aktar',
+  'import.textHelp': 'OneTab’ın dışa aktarım metnini ya da her satıra bir adres yapıştır. Boş satırlar grupları ayırır.',
+  'import.textLabel': 'Metin',
+  'import.textSummary': '{tabs} sekme, {groups} grup bulundu; {skipped} satır atlanacak.',
+  'import.defaultName': 'İçe aktarılanlar',
+  'import.groupName': 'Grup {n}',
+  'import.folderName': 'Klasör adı',
+  'import.bookmarksTitle': 'Chrome yer imlerinden içe aktar',
+  'import.bookmarksHelp': 'Seçtiğin yer imi klasörü, alt klasörleriyle birlikte TabFlow klasörü olur.',
+  'import.bookmarksPick': 'Yer imi klasörü',
+  'import.bookmarksEmpty': 'Yer imi klasörü bulunamadı.',
+  'import.bookmarksDefaultName': 'Yer imleri',
+  'import.permissionDenied': 'Yer imlerini okuma izni verilmedi.',
+  'import.done': '“{name}” içe aktarıldı: {folders} klasör, {tabs} sekme.',
+  'backupMenu.importText': 'Metinden içe aktar (OneTab, adres listesi)…',
+  'backupMenu.importBookmarks': 'Chrome yer imlerinden içe aktar…',
 } satisfies Record<string, MessageEntry>;
 
 export type Messages = { [K in keyof typeof tr]: MessageEntry };

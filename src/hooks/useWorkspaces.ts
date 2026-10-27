@@ -34,6 +34,7 @@ import {
   toFolderRefs,
 } from '../utils/workspaceTree';
 import { t } from '../i18n';
+import { addImportedTree, type ImportFolderSpec } from '../utils/externalImport';
 
 const NO_TRASH: TrashEntry[] = [];
 
@@ -561,6 +562,34 @@ export function useWorkspaces() {
     [update],
   );
 
+  /** Başka bir araçtan gelen klasör ağacını kökte tek yazmada oluşturur. */
+  const importTree = useCallback(
+    async (spec: ImportFolderSpec): Promise<{ rootId: string; folders: number; tabs: number }> => {
+      let result = { rootId: '', folders: 0, tabs: 0 };
+      await update((current) => {
+        const added = addImportedTree(current, spec, null, Date.now());
+        result = { rootId: added.rootId, folders: added.folders, tabs: added.tabs };
+        return added.map;
+      });
+      return result;
+    },
+    [update],
+  );
+
+  /** İçe aktarmayı geri alır: oluşturulan klasör ağacı (çöp kutusuna gitmeden) kaldırılır. */
+  const discardImportedTree = useCallback(
+    async (rootId: string): Promise<void> => {
+      await update((current) => {
+        const subtree = collectSubtree(buildChildrenIndex(current), current, rootId);
+        if (subtree.length === 0) return current;
+        const next = { ...current };
+        for (const folder of subtree) delete next[folder.id];
+        return next;
+      });
+    },
+    [update],
+  );
+
   const listSnapshots = useCallback((): Promise<Snapshot[]> => readSnapshots(), []);
 
   /**
@@ -639,6 +668,8 @@ export function useWorkspaces() {
     revertImport,
     listSnapshots,
     restoreSnapshot,
+    importTree,
+    discardImportedTree,
     restoreFolder,
     openTab,
     activateTab,

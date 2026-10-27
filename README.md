@@ -21,6 +21,7 @@ Sekmelerini klasörlere ve serbest bir tuvale kaydet, kapat ve saniyeler içinde
 - **Çöp kutusu:** silinen klasörler (alt klasörleriyle) ve sekmeler 30 gün saklanır; tam ekran uygulamadan tek tek geri yüklenir.
 - **Diske otomatik yedek:** klasörlerin JSON yedeği varsayılan olarak haftada bir `İndirilenler/TabFlow/` klasörüne yazılır (*Yedek* menüsünden günlük yapılabilir ya da kapatılabilir). Eklenti kaldırılırsa Chrome eklentinin tüm verisini siler; bu dosyalar kalır ve *Yedekten içe aktar* ile geri yüklenir.
 - **Otomatik yedek:** günde bir kez klasörlerin anlık görüntüsü alınır, son 7'si tutulur (*Yedek* menüsü). Bir yedeğe dönmeden önce o anki hal de yedeklenir.
+- **Başka araçlardan içe aktarma** (*Yedek* menüsü): OneTab dışa aktarım metni ya da adres listesi yapıştırılabilir; bir Chrome yer imi klasörü alt klasörleriyle aktarılabilir (yer imleri izni yalnızca bu özellik ilk kullanıldığında istenir).
 - JSON yedeği alma ve geri yükleme. Geri yüklemede mevcut veriler silinmez, aynı klasörün sekmeleri birleştirilir.
 
 ## Klavye kısayolları
@@ -70,6 +71,7 @@ Her push ve pull request'te GitHub Actions tip kontrolü, lint, birim testleri, 
 | `tabGroups` | Klasörü adı ve rengiyle bir sekme grubu olarak açmak |
 | `downloads` | Otomatik yedeği diske (İndirilenler/TabFlow) yazmak |
 | `sidePanel` | Arayüzü tarayıcının yan panelinde açmak |
+| `bookmarks` (isteğe bağlı) | Yer imlerinden içe aktarırken, yalnızca o an istenir |
 
 Veriler yalnızca bu tarayıcıda (`chrome.storage.local`) tutulur; hiçbir sunucuya gönderilmez.
 

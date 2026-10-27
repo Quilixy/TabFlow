@@ -55,5 +55,8 @@
   },
   "omnibox": {
     "keyword": "tf"
-  }
+  },
+  "optional_permissions": [
+    "bookmarks"
+  ]
 }

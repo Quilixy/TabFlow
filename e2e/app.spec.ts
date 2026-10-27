@@ -218,4 +218,25 @@ test.describe('tam ekran uygulama', () => {
     await app.keyboard.press('Enter');
     await expect(app.getByRole('dialog', { name: 'Çöp kutusu' })).toBeVisible();
   });
+
+  test('OneTab metninden gruplarıyla içe aktarır ve geri alır', async ({ openApp }) => {
+    const app = await openApp();
+    await app.getByRole('button', { name: /^Yedek/ }).click();
+    await app.getByRole('menuitem', { name: /Metinden içe aktar/ }).click();
+
+    const dialog = app.getByRole('dialog', { name: 'Metinden içe aktar' });
+    await dialog.getByLabel('Klasör adı').fill('OneTab');
+    await dialog
+      .getByLabel('Metin')
+      .fill(['https://a.example | A', 'https://b.example | B', '', 'https://c.example | C', 'chrome://settings | X'].join('\n'));
+    await expect(dialog.getByRole('status')).toHaveText('3 sekme, 2 grup bulundu; 1 satır atlanacak.');
+    await dialog.getByRole('button', { name: 'İçe aktar' }).click();
+
+    await expect(app.getByRole('status').getByText('“OneTab” içe aktarıldı: 3 klasör, 3 sekme.')).toBeVisible();
+    await expect(app.getByRole('treeitem', { name: /Grup 1/ })).toBeVisible();
+    await expect(app.getByRole('treeitem', { name: /Grup 2/ })).toBeVisible();
+
+    await app.getByRole('button', { name: 'Geri al' }).click();
+    await expect(app.getByRole('treeitem', { name: /OneTab/ })).toHaveCount(0);
+  });
 });
