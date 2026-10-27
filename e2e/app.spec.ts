@@ -239,4 +239,22 @@ test.describe('tam ekran uygulama', () => {
     await app.getByRole('button', { name: 'Geri al' }).click();
     await expect(app.getByRole('treeitem', { name: /OneTab/ })).toHaveCount(0);
   });
+
+  test('sol klasör paneli gizlenir, yeniden yüklemede gizli kalır ve geri açılır', async ({ openApp, seed }) => {
+    const app = await openApp();
+    await seed({ a: folder('a', 'Panel') });
+    const panel = app.locator('#tf-folder-panel');
+    await expect(app.getByRole('treeitem', { name: /Panel/ })).toBeVisible();
+
+    await app.getByRole('button', { name: 'Klasör panelini gizle' }).click();
+    await expect(panel).toHaveAttribute('inert');
+    await expect(app.getByRole('treeitem', { name: /Panel/ })).toHaveCount(0); // inert: erişilebilirlik ağacından çıkar
+
+    await app.reload();
+    const show = app.getByRole('button', { name: 'Klasör panelini göster' });
+    await expect(show).toHaveAttribute('aria-expanded', 'false');
+    await show.click();
+    await expect(panel).not.toHaveAttribute('inert');
+    await expect(app.getByRole('treeitem', { name: /Panel/ })).toBeVisible();
+  });
 });

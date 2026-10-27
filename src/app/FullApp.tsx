@@ -15,7 +15,15 @@ import { ImportDialog, type ImportSource } from '../components/ImportDialog';
 import type { ImportFolderSpec } from '../utils/externalImport';
 import type { PaletteCommand } from '../utils/palette';
 import { IconButton } from '../components/ui/IconButton';
-import { ArchiveIcon, ChevronDownIcon, CommandIcon, ExternalLinkIcon, PlusIcon, TrashIcon } from '../components/ui/icons';
+import {
+  ArchiveIcon,
+  ChevronDownIcon,
+  CommandIcon,
+  ExternalLinkIcon,
+  PanelLeftIcon,
+  PlusIcon,
+  TrashIcon,
+} from '../components/ui/icons';
 import { restoreEntries } from '../components/ui/menu';
 import { Toast } from '../components/ui/Toast';
 import { useConfirm } from '../hooks/useConfirm';
@@ -100,6 +108,8 @@ export default function FullApp() {
   const markEntering = useUiStore((s) => s.markEntering);
   const setLeaving = useUiStore((s) => s.setLeaving);
   const animation = useUiStore((s) => s.animation);
+  const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed);
+  const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const lastBackupAt = useUiStore((s) => s.lastBackupAt);
   const setLastBackupAt = useUiStore((s) => s.setLastBackupAt);
   const query = useUiStore((s) => s.query);
@@ -751,6 +761,7 @@ export default function FullApp() {
       action('import-text', t('backupMenu.importText'), () => setImportSource('text')),
       action('import-bookmarks', t('backupMenu.importBookmarks'), openBookmarksImport),
       action('toggle-open-tabs', t('cmd.toggleOpenTabs'), () => setShowOpenTabs((v) => !v)),
+      action('toggle-folders', t('cmd.toggleFolders'), toggleSidebar),
     ];
     if (current) {
       actions.unshift(
@@ -783,7 +794,15 @@ export default function FullApp() {
 
   return (
     <div className="flex h-full flex-col text-gray-900">
-      <header className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4 py-2.5">
+      <header className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-white py-2.5 pr-4 pl-2.5">
+        <IconButton
+          label={sidebarCollapsed ? t('app.showFolders') : t('app.hideFolders')}
+          aria-expanded={!sidebarCollapsed}
+          aria-controls="tf-folder-panel"
+          onClick={toggleSidebar}
+        >
+          <PanelLeftIcon />
+        </IconButton>
         <h1 className="flex items-center gap-2 text-base font-semibold">
           <span
             aria-hidden="true"
@@ -842,26 +861,35 @@ export default function FullApp() {
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <aside className="w-72 shrink-0 border-r border-gray-200 bg-white">
-          <FolderTree
-            workspaces={workspaces}
-            index={index}
-            query={query}
-            onQueryChange={setQuery}
-            selectedId={currentId}
-            disabled={isBusy}
-            onSelect={navigate}
-            onNewFolder={(parentId) => setComposer({ mode: 'empty', parentId })}
-            onRename={(id) => handleRename(id, 'tree')}
-            onRenameCommit={handleRenameCommit}
-            onStyle={handleStyle}
-            onDelete={handleDelete}
-            onRestore={handleRestore}
-            onDropOpenTab={handleDropOpenTab}
-            onMoveFolder={handleMoveFolder}
-            onReorderFolder={handleReorderFolder}
-            onToggleFavorite={handleToggleFavorite}
-          />
+        {/* Kapalıyken genişlik 0'a iner; içerik sabit genişlikte kalır (kayarken yeniden dizilmez) ve inert olur. */}
+        <aside
+          id="tf-folder-panel"
+          inert={sidebarCollapsed}
+          className={`shrink-0 overflow-hidden border-gray-200 bg-white transition-[width,visibility] duration-200 ease-out motion-reduce:transition-none ${
+            sidebarCollapsed ? 'invisible w-0' : 'w-72 border-r'
+          }`}
+        >
+          <div className="h-full w-72">
+            <FolderTree
+              workspaces={workspaces}
+              index={index}
+              query={query}
+              onQueryChange={setQuery}
+              selectedId={currentId}
+              disabled={isBusy}
+              onSelect={navigate}
+              onNewFolder={(parentId) => setComposer({ mode: 'empty', parentId })}
+              onRename={(id) => handleRename(id, 'tree')}
+              onRenameCommit={handleRenameCommit}
+              onStyle={handleStyle}
+              onDelete={handleDelete}
+              onRestore={handleRestore}
+              onDropOpenTab={handleDropOpenTab}
+              onMoveFolder={handleMoveFolder}
+              onReorderFolder={handleReorderFolder}
+              onToggleFavorite={handleToggleFavorite}
+            />
+          </div>
         </aside>
 
         <main className="flex min-w-0 flex-1 flex-col">

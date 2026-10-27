@@ -27,6 +27,8 @@ interface UiState {
   decor: boolean;
   /** Klasör kartlarında alt klasörlerin içeriğini de göster. */
   deepPreview: boolean;
+  /** Tam ekranda sol klasör paneli gizli. */
+  sidebarCollapsed: boolean;
   /** Arayüz dili ('auto': tarayıcının dili). */
   language: LanguageSetting;
   // Oturumluk
@@ -64,6 +66,7 @@ interface UiState {
   setPack: (value: ThemePack) => void;
   setDecor: (value: boolean) => void;
   setDeepPreview: (value: boolean) => void;
+  toggleSidebar: () => void;
   setLanguage: (value: LanguageSetting) => void;
   triggerBurst: (x: number, y: number) => void;
   markEntering: (ids: string[]) => void;
@@ -86,7 +89,7 @@ const ENTER_MARK_MS = 800;
 /** Bu pencerenin sahibi olmadığı (başka pencereye ait) kalıcı alanlar: yazarken depodaki değerleri korunur. */
 const FOREIGN_FIELDS: readonly string[] =
   typeof location !== 'undefined' && location.pathname.includes('/popup/')
-    ? ['selectedFolderId', 'expanded'] // tam ekran uygulamanın gezinti durumu
+    ? ['selectedFolderId', 'expanded', 'sidebarCollapsed'] // tam ekran uygulamanın gezinti ve yerleşim durumu
     : ['popupExpanded'];
 
 function dedupedLocalStorage(): Storage {
@@ -122,6 +125,7 @@ export const useUiStore = create<UiState>()(
       pack: 'default',
       decor: true,
       deepPreview: true,
+      sidebarCollapsed: false,
       language: 'auto',
       draftName: '',
       includePinned: false,
@@ -165,6 +169,7 @@ export const useUiStore = create<UiState>()(
       setPack: (pack) => set({ pack }),
       setDecor: (decor) => set({ decor }),
       setDeepPreview: (deepPreview) => set({ deepPreview }),
+      toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       setLanguage: (language) => set({ language }),
       triggerBurst: (x, y) => {
         const key = ++burstSeq;
@@ -216,6 +221,7 @@ export const useUiStore = create<UiState>()(
         pack: s.pack,
         decor: s.decor,
         deepPreview: s.deepPreview,
+        sidebarCollapsed: s.sidebarCollapsed,
         language: s.language,
       }),
     },

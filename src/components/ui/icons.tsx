@@ -434,6 +434,14 @@ export const SidePanelIcon = (p: IconProps) => (
   </Icon>
 );
 
+/** Sol kenar paneli (klasör panelini aç/kapat). */
+export const PanelLeftIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect width="18" height="18" x="3" y="3" rx="2" />
+    <path d="M9 3v18" />
+  </Icon>
+);
+
 export const PopupWindowIcon = (p: IconProps) => (
   <Icon {...p}>
     <rect width="18" height="18" x="3" y="3" rx="2" />
