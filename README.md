@@ -29,6 +29,7 @@ Sekmelerini klasörlere ve serbest bir tuvale kaydet, kapat ve saniyeler içinde
 | --- | --- |
 | `Alt+Shift+T` | Tam ekran uygulamayı aç |
 | `Alt+Shift+S` | Aktif sayfayı son kullanılan klasöre kaydet |
+| `Ctrl+K` (Mac: `⌘K`) | Tam ekranda komut paleti: klasöre git ya da bir işlem çalıştır |
 
 Kısayollar `chrome://extensions/shortcuts` adresinden değiştirilebilir.
 

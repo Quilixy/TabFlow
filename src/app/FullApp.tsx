@@ -10,10 +10,14 @@ import { OpenTabsList } from '../components/OpenTabsList';
 import { Button } from '../components/ui/Button';
 import { ErrorBanner } from '../components/ui/ErrorBanner';
 import { TrashPanel } from '../components/TrashPanel';
-import { ArchiveIcon, ChevronDownIcon, ExternalLinkIcon, PlusIcon, TrashIcon } from '../components/ui/icons';
+import { CommandPalette } from '../components/CommandPalette';
+import type { PaletteCommand } from '../utils/palette';
+import { IconButton } from '../components/ui/IconButton';
+import { ArchiveIcon, ChevronDownIcon, CommandIcon, ExternalLinkIcon, PlusIcon, TrashIcon } from '../components/ui/icons';
 import { restoreEntries } from '../components/ui/menu';
 import { Toast } from '../components/ui/Toast';
 import { useConfirm } from '../hooks/useConfirm';
+import { useEventCallback } from '../hooks/useEventCallback';
 import { useContextMenu } from '../hooks/useContextMenu';
 import { resolveOpenTabById, type OpenTab } from '../hooks/useTabManager';
 import { useWorkspaces } from '../hooks/useWorkspaces';
@@ -32,7 +36,7 @@ import type { DropPlacement } from '../utils/workspaceOps';
 import { LEAVE_ANIMATION_MS } from '../utils/theme';
 import { NAVIGATE_KEY, parseNavigateRequest } from '../utils/uiSync';
 import { canReparent, collectSubtree, countTabs, getPath, pathLabel } from '../utils/workspaceTree';
-import { t } from '../i18n';
+import { localeTag, t } from '../i18n';
 
 const SAVE_ACTION = '__save__';
 const CREATE_ACTION = '__create__';
@@ -110,6 +114,7 @@ export default function FullApp() {
   const [mountedAt] = useState(() => Date.now());
   const [stylePicker, setStylePicker] = useState<{ folderId: string; x: number; y: number } | null>(null);
   const [showTrash, setShowTrash] = useState(false);
+  const [showPalette, setShowPalette] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { menu: backupMenu, openAt: openBackupMenuAt } = useContextMenu();
   const { menu: restoreMenu, openAt: openRestoreMenuAt } = useContextMenu();
@@ -424,6 +429,18 @@ export default function FullApp() {
     [stylePicker, run, setFolderStyle],
   );
 
+  // Ctrl/⌘ + K: komut paleti (yazı alanındayken de açılır; tarayıcının kendi kısayolunun önüne geçer).
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowPalette((open) => !open);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   // F2: seçili klasörü yeniden adlandır (bir yazı alanındayken karışma). Ağaç satırı görünür alana kaydırılır.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -680,6 +697,46 @@ export default function FullApp() {
     );
   };
 
+  const openImportPicker = useEventCallback(() => fileInputRef.current?.click());
+
+  /** Komut paletinin içeriği: önce işlemler, sonra tüm klasörler (tam yollarıyla). Yalnızca palet açıkken kurulur. */
+  const buildPaletteCommands = (): PaletteCommand[] => {
+    const action = (id: string, label: string, run: () => void): PaletteCommand => ({
+      id,
+      label,
+      hint: t('palette.command'),
+      group: 'action',
+      run,
+    });
+    const actions: PaletteCommand[] = [
+      action('new-folder', t('cmd.newFolder'), () => setComposer({ mode: 'empty', parentId: null })),
+      action('save-all', t('cmd.saveAll'), () => setComposer({ mode: 'saveAll', parentId: currentId })),
+      action('trash', t('cmd.trash'), () => setShowTrash(true)),
+      action('download-backup', t('cmd.downloadBackup'), handleExport),
+      action('import-backup', t('cmd.importBackup'), openImportPicker),
+      action('toggle-open-tabs', t('cmd.toggleOpenTabs'), () => setShowOpenTabs((v) => !v)),
+    ];
+    if (current) {
+      actions.unshift(
+        action('new-subfolder', t('cmd.newSubfolder', { name: current.name }), () =>
+          setComposer({ mode: 'empty', parentId: current.id }),
+        ),
+        action('open-current', t('cmd.openCurrent', { name: current.name }), () => handleRestore(current.id, false)),
+        action('go-root', t('cmd.goRoot'), () => navigate(null)),
+      );
+    }
+    const folders: PaletteCommand[] = Object.values(workspaces)
+      .map((w) => ({
+        id: `folder:${w.id}`,
+        label: pathLabel(workspaces, w.id),
+        hint: t('palette.goToFolder'),
+        group: 'folder' as const,
+        run: () => navigate(w.id),
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, localeTag()));
+    return [...actions, ...folders];
+  };
+
   const pendingAction = (id: string) => pendingActions.has(id);
   const isBusy = pendingActions.size > 0;
   const currentSubtreeTabs = current ? countTabs(collectSubtree(index, workspaces, current.id)) : 0;
@@ -735,6 +792,9 @@ export default function FullApp() {
             <TrashIcon />
             {trash.length > 0 && <span className="tabular-nums">{trash.length}</span>}
           </Button>
+          <IconButton label={t('palette.button')} onClick={() => setShowPalette(true)}>
+            <CommandIcon />
+          </IconButton>
           <AppearanceMenu />
         </div>
       </header>
@@ -883,6 +943,7 @@ export default function FullApp() {
           onClose={() => setStylePicker(null)}
         />
       )}
+      {showPalette && <CommandPalette commands={buildPaletteCommands()} onClose={() => setShowPalette(false)} />}
       {showTrash && (
         <TrashPanel
           entries={trash}

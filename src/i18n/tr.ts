@@ -336,6 +336,23 @@ export const tr = {
   // Siteye göre gruplama
   'composer.groupByDomain': 'Siteye göre alt klasörlere ayır',
   'saveAll.grouped': '{n} siteye göre alt klasörlere ayrıldı.',
+  // Komut paleti
+  'palette.title': 'Komut paleti',
+  'palette.button': 'Komut paleti (Ctrl+K)',
+  'palette.placeholder': 'Klasöre git ya da komut ara…',
+  'palette.empty': 'Eşleşen sonuç yok.',
+  'palette.footer': '↑↓ seç · Enter çalıştır · Esc kapat',
+  'palette.goToFolder': 'Klasöre git',
+  'palette.command': 'Komut',
+  'cmd.newFolder': 'Yeni klasör',
+  'cmd.newSubfolder': '“{name}” içinde yeni alt klasör',
+  'cmd.saveAll': 'Açık sekmelerin tümünü kaydet',
+  'cmd.openCurrent': '“{name}” klasörünün sekmelerini aç',
+  'cmd.goRoot': 'Tüm klasörlere dön',
+  'cmd.toggleOpenTabs': 'Açık sekmeler panelini göster/gizle',
+  'cmd.trash': 'Çöp kutusunu aç',
+  'cmd.downloadBackup': 'Yedeği indir (JSON)',
+  'cmd.importBackup': 'Yedekten içe aktar…',
 } satisfies Record<string, MessageEntry>;
 
 export type Messages = { [K in keyof typeof tr]: MessageEntry };

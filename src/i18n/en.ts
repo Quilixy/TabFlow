@@ -338,4 +338,21 @@ export const en: Messages = {
   // Siteye göre gruplama
   'composer.groupByDomain': 'Group into subfolders by site',
   'saveAll.grouped': (p) => `Grouped into ${p.n} ${plural(p.n, 'subfolder', 'subfolders')} by site.`,
+  // Komut paleti
+  'palette.title': 'Command palette',
+  'palette.button': 'Command palette (Ctrl+K)',
+  'palette.placeholder': 'Go to a folder or search commands…',
+  'palette.empty': 'No matching results.',
+  'palette.footer': '↑↓ select · Enter run · Esc close',
+  'palette.goToFolder': 'Go to folder',
+  'palette.command': 'Command',
+  'cmd.newFolder': 'New folder',
+  'cmd.newSubfolder': 'New subfolder in “{name}”',
+  'cmd.saveAll': 'Save all open tabs',
+  'cmd.openCurrent': 'Open the tabs of “{name}”',
+  'cmd.goRoot': 'Back to all folders',
+  'cmd.toggleOpenTabs': 'Show/hide the open tabs panel',
+  'cmd.trash': 'Open the trash',
+  'cmd.downloadBackup': 'Download backup (JSON)',
+  'cmd.importBackup': 'Import from backup…',
 };

@@ -199,4 +199,23 @@ test.describe('tam ekran uygulama', () => {
     await expect(app.getByRole('button', { name: /haber\.tabflow\.test klasörü, 2 sekme/ })).toBeVisible();
     await expect(app.getByRole('button', { name: /^1 \(blog\.tabflow\.test\)/ })).toBeVisible();
   });
+
+  test('Ctrl+K komut paletiyle klasöre gider ve komut çalıştırır', async ({ openApp, seed }) => {
+    const app = await openApp();
+    await seed({ a: folder('a', 'İş'), b: folder('b', 'Çalışma notları', [], 'a') });
+    await expect(app.getByRole('treeitem', { name: /İş/ })).toBeVisible();
+
+    await app.keyboard.press('Control+k');
+    const palette = app.getByRole('dialog', { name: 'Komut paleti' });
+    await palette.getByRole('combobox').fill('calisma');
+    await expect(palette.getByRole('option')).toHaveText([/İş \/ Çalışma notları/]);
+    await app.keyboard.press('Enter');
+    await expect(palette).toHaveCount(0);
+    await expect(app.getByRole('navigation', { name: 'Konum' })).toContainText('Çalışma notları');
+
+    await app.keyboard.press('Control+k');
+    await palette.getByRole('combobox').fill('cop kutusu');
+    await app.keyboard.press('Enter');
+    await expect(app.getByRole('dialog', { name: 'Çöp kutusu' })).toBeVisible();
+  });
 });
