@@ -46,11 +46,11 @@ export const TabCard = memo(function TabCard({ tab, x, y, isDragging, isSelected
       }}
       title={t('card.tabTitle', { title: tab.title, url: tab.url })}
       className={`group absolute rounded-2xl border bg-white p-3 outline-none select-none transition duration-200 ease-out focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-        isDragging 
-          ? 'z-20 border-gray-400 cursor-grabbing shadow-2xl' 
+        isDragging
+          ? 'z-20 border-indigo-400 cursor-grabbing shadow-2xl'
           : isSelected
-            ? 'border-gray-900 ring-1 ring-gray-900 shadow-md z-10'
-            : 'border-[var(--tf-card-border)] cursor-grab shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] hover:-translate-y-1 hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.08)]'
+            ? 'border-indigo-600 ring-1 ring-indigo-600 shadow-md z-10'
+            : 'border-[var(--tf-card-border)] cursor-grab shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] hover:-translate-y-1 hover:border-indigo-200 hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.08)]'
       }`}
     >
       <div className="flex items-start gap-2.5">

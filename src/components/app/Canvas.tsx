@@ -850,6 +850,7 @@ export function Canvas({
       ref={containerRef}
       tabIndex={-1}
       role="application"
+      data-canvas
       aria-label={folder ? t('canvas.label', { name: folder.name }) : t('canvas.rootLabel')}
       onPointerDown={handleBackgroundPointerDown}
       onPointerMove={handleBackgroundPointerMove}
@@ -998,7 +999,6 @@ export function Canvas({
           label={deepPreview ? t('canvas.hidePreviews') : t('canvas.showPreviews')}
           aria-pressed={deepPreview}
           onClick={() => setDeepPreview(!deepPreview)}
-          className={deepPreview ? 'bg-gray-100 text-gray-900' : ''}
         >
           <ListIcon />
         </IconButton>

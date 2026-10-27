@@ -440,7 +440,7 @@ export function FolderTree({
           <>
             <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
               {t('common.folders')}
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">{totalCount}</span>
+              <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">{totalCount}</span>
             </h2>
             <div className="ml-auto flex items-center">
               <IconButton label={t('search.open')} onClick={() => setIsSearchOpen(true)}>

@@ -20,7 +20,7 @@ export function IconButton({
       type={type}
       aria-label={label}
       title={title ? `${label}\n${title}` : label}
-      className={`inline-flex size-7 shrink-0 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 focus-visible:outline-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+      className={`inline-flex size-7 shrink-0 items-center justify-center rounded-md text-gray-500 transition hover:bg-indigo-50 hover:text-indigo-700 aria-pressed:bg-indigo-50 aria-pressed:text-indigo-700 focus-visible:outline-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
       {...rest}
     >
       {children}

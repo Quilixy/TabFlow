@@ -100,9 +100,21 @@ html[data-accent='amber'] {
   --color-indigo-700: var(--ac-700);
   --color-indigo-800: var(--ac-800);
   --color-indigo-900: var(--ac-900);
-  --tf-grid-dot: #d1d5db;
+  /* Tuval noktaları vurgu renginden hafif bir ton alır */
+  --tf-grid-dot: color-mix(in srgb, var(--ac-400) 32%, #d1d5db);
   /* Kart/menü kenarı: açık yüzeyde hafif koyu, koyu yüzeyde hafif açık */
   --tf-card-border: rgb(0 0 0 / 0.05);
+  /* Dolu vurgu düğmesi: beyaz yazı her vurgu renginde en az 4.5:1 kontrast verir (700 tonu) */
+  --tf-accent-solid: var(--ac-700);
+  --tf-accent-solid-hover: var(--ac-800);
+  /* Onay kutusu, radyo, kaydırıcı */
+  accent-color: var(--ac-600);
+}
+::selection { background-color: color-mix(in srgb, var(--ac-400) 35%, transparent); }
+
+/* Varsayılan pakette tuval zemini vurgu renginin çok açık tonunu alır (paketlerin kendi zemini var) */
+html[data-pack='default'] [data-canvas] {
+  background-color: color-mix(in srgb, var(--color-indigo-50) 70%, var(--color-gray-50));
 }
 
 /* ---- Koyu tema ---- */
@@ -142,8 +154,9 @@ html[data-theme='dark'] {
   --color-emerald-50: color-mix(in srgb, #10b981 18%, #15161c);
   --color-emerald-600: #34d399;
 
-  --tf-grid-dot: #2f3340;
+  --tf-grid-dot: color-mix(in srgb, var(--ac-500) 30%, #2f3340);
   --tf-card-border: rgb(255 255 255 / 0.08);
+  --tf-accent-solid-hover: var(--ac-600);
 }
 
 /* =====================================================================
@@ -166,21 +179,22 @@ html[data-pack='space'] {
 
 /* ---- Sakura · açık ---- */
 html[data-pack='sakura'][data-theme='light'] {
-  --color-white: #fffafc;
-  --color-gray-50: #fff3f7;
-  --color-gray-100: #fde7ef;
-  --color-gray-200: #f8d3e1;
-  --color-gray-300: #eab6cb;
-  --color-gray-400: #8a5a72;
-  --color-gray-500: #774863;
-  --color-gray-600: #66394f;
+  --color-white: #fff6fa;
+  --color-gray-50: #ffe4ee;
+  --color-gray-100: #fcd3e2;
+  --color-gray-200: #f5bad0;
+  --color-gray-300: #e596b4;
+  --color-gray-400: #7a4263;
+  --color-gray-500: #6e3a5a;
+  --color-gray-600: #62334f;
   --color-gray-700: #552d43;
   --color-gray-800: #442238;
   --color-gray-900: #33172c;
-  --tf-grid-dot: #f0c4d4;
+  --tf-grid-dot: #f1a6c2;
+  --tf-card-border: rgb(207 52 112 / 0.14);
 }
 html[data-pack='sakura'][data-theme='light'] body {
-  background: linear-gradient(160deg, #fff7fa 0%, #ffeef4 55%, #fff6f9 100%) fixed;
+  background: linear-gradient(160deg, #ffeef4 0%, #ffdce9 55%, #ffe8f0 100%) fixed;
 }
 
 /* ---- Sakura · koyu (gece sakurası) ---- */
@@ -252,32 +266,33 @@ html[data-pack='space'][data-theme='dark'][data-decor='on'] :is([role='menu'], [
 /* ---- Uzay · açık (yörünge) ---- */
 html[data-pack='space'][data-theme='light'] {
   --color-white: #ffffff;
-  --color-gray-50: #f2f3ff;
-  --color-gray-100: #e7e9fb;
-  --color-gray-200: #d5d9f5;
-  --color-gray-300: #b7bdea;
-  --color-gray-400: #5a62a3;
-  --color-gray-500: #4b5392;
+  --color-gray-50: #ebebff;
+  --color-gray-100: #dfe0fb;
+  --color-gray-200: #cacff3;
+  --color-gray-300: #a9b0e6;
+  --color-gray-400: #4b5392;
+  --color-gray-500: #434a87;
   --color-gray-600: #3d4480;
   --color-gray-700: #30366a;
   --color-gray-800: #232754;
   --color-gray-900: #171a3f;
-  --tf-grid-dot: #c7ccf0;
-  --tf-star-color: #6366f1;
-  --tf-star-glow: rgb(99 102 241 / 0.5);
+  --tf-grid-dot: #b3b9ee;
+  --tf-card-border: rgb(109 40 217 / 0.14);
+  --tf-star-color: #6d28d9;
+  --tf-star-glow: rgb(124 58 237 / 0.55);
 }
-html[data-pack='space'][data-theme='light'] body { background: #f2f3ff; }
+html[data-pack='space'][data-theme='light'] body { background: #e6e6ff; }
 html[data-pack='space'][data-theme='light'][data-decor='on'] {
-  --color-white: rgb(255 255 255 / 0.78);
-  --color-gray-50: rgb(238 240 255 / 0.55);
+  --color-white: rgb(255 255 255 / 0.72);
+  --color-gray-50: rgb(228 228 255 / 0.4);
 }
 html[data-pack='space'][data-theme='light'][data-decor='on'] body {
   background:
-    radial-gradient(1px 1px at 20px 30px, rgb(99 102 241 / 0.55), transparent), radial-gradient(1px 1px at 90px 140px, rgb(99 102 241 / 0.55), transparent), radial-gradient(1.5px 1.5px at 160px 60px, rgb(99 102 241 / 0.55), transparent), radial-gradient(1px 1px at 210px 190px, rgb(99 102 241 / 0.55), transparent), radial-gradient(1.5px 1.5px at 270px 110px, rgb(99 102 241 / 0.55), transparent), radial-gradient(1px 1px at 330px 250px, rgb(99 102 241 / 0.55), transparent), radial-gradient(1px 1px at 60px 250px, rgb(99 102 241 / 0.55), transparent), radial-gradient(1px 1px at 300px 20px, rgb(99 102 241 / 0.55), transparent),
-    radial-gradient(ellipse at 12% 18%, rgb(167 139 250 / 0.35), transparent 55%),
-    radial-gradient(ellipse at 88% 78%, rgb(125 211 252 / 0.38), transparent 50%),
-    radial-gradient(ellipse at 60% 40%, rgb(249 168 212 / 0.22), transparent 60%),
-    #f3f4ff;
+    radial-gradient(1.5px 1.5px at 20px 30px, rgb(91 33 182 / 0.7), transparent), radial-gradient(1.5px 1.5px at 90px 140px, rgb(91 33 182 / 0.7), transparent), radial-gradient(2px 2px at 160px 60px, rgb(91 33 182 / 0.7), transparent), radial-gradient(1.5px 1.5px at 210px 190px, rgb(91 33 182 / 0.7), transparent), radial-gradient(2px 2px at 270px 110px, rgb(91 33 182 / 0.7), transparent), radial-gradient(1.5px 1.5px at 330px 250px, rgb(91 33 182 / 0.7), transparent), radial-gradient(1.5px 1.5px at 60px 250px, rgb(91 33 182 / 0.7), transparent), radial-gradient(1.5px 1.5px at 300px 20px, rgb(91 33 182 / 0.7), transparent),
+    radial-gradient(ellipse at 12% 18%, rgb(139 92 246 / 0.5), transparent 55%),
+    radial-gradient(ellipse at 88% 78%, rgb(56 189 248 / 0.45), transparent 50%),
+    radial-gradient(ellipse at 60% 40%, rgb(236 72 153 / 0.28), transparent 60%),
+    #e4e3ff;
   background-size: 360px 300px, 360px 300px, 360px 300px, 360px 300px, 360px 300px, 360px 300px, 360px 300px, 360px 300px, auto, auto, auto, auto;
   background-attachment: fixed;
 }
@@ -411,8 +426,9 @@ html[data-pack='space'] .tf-decor { z-index: 0; }
 /* Koyu tonda belirgin, açık tonda soluk: içerik her zaman önde ve okunur kalır */
 html[data-pack='space'][data-theme='dark'] .tf-planet-wrap { opacity: 0.6; }
 html[data-pack='space'][data-theme='dark'] .tf-moon { opacity: 0.75; }
-html[data-pack='space'][data-theme='light'] .tf-planet-wrap { opacity: 0.38; }
-html[data-pack='space'][data-theme='light'] .tf-moon { opacity: 0.5; }
+html[data-pack='space'][data-theme='light'] .tf-planet-wrap { opacity: 0.75; }
+html[data-pack='space'][data-theme='light'] .tf-moon { opacity: 0.85; filter: drop-shadow(0 0 10px rgb(124 58 237 / 0.35)); }
+html[data-pack='space'][data-theme='light'] .tf-star { box-shadow: 0 0 6px 1px var(--tf-star-glow); }
 html[data-pack='space'][data-theme='light'] .tf-comet { background: linear-gradient(90deg, transparent, rgb(99 102 241 / 0.5) 60%, #6366f1); box-shadow: none; }
 html[data-pack='space'][data-theme='light'] .tf-comet::after { background: #6366f1; box-shadow: 0 0 10px 3px rgb(99 102 241 / 0.5); }
 

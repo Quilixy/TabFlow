@@ -10,8 +10,9 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-gray-900 text-white hover:bg-gray-800 shadow-none',
-  secondary: 'bg-gray-100 text-gray-800 hover:bg-gray-200 border-none shadow-none',
+  primary: 'bg-(--tf-accent-solid) text-[#fff] hover:bg-(--tf-accent-solid-hover) shadow-none',
+  secondary:
+    'bg-gray-100 text-gray-800 hover:bg-indigo-50 hover:text-indigo-800 aria-pressed:bg-indigo-100 aria-pressed:text-indigo-800 border-none shadow-none',
   soft: 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 shadow-none',
   danger: 'bg-red-600 text-white hover:opacity-90 shadow-none',
   ghost: 'text-gray-600 hover:bg-gray-100',
@@ -37,7 +38,7 @@ export function Button({
       type={type}
       disabled={disabled || isLoading}
       aria-busy={isLoading}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 disabled:cursor-not-allowed disabled:opacity-60 ${SIZES[size]} ${VARIANTS[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:opacity-60 ${SIZES[size]} ${VARIANTS[variant]} ${className}`}
       {...rest}
     >
       {isLoading && (

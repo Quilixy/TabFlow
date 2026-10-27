@@ -146,7 +146,7 @@ export function OpenTabsList({
         >
           <ChevronDownIcon className={`shrink-0 text-gray-500 transition ${isExpanded ? '' : '-rotate-90'}`} />
           <span className="text-sm font-semibold text-gray-900">{t('openTabs.title')}</span>
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+          <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
             {visibleTabs.length}
           </span>
         </button>

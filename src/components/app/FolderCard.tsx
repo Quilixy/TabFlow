@@ -113,11 +113,11 @@ export const FolderCard = memo(function FolderCard({ folder, childCount, rows, x
       onDrop={handleDrop}
       title={t('card.folderTitle', { name: folder.name })}
       className={`group absolute rounded-2xl border p-3 outline-none select-none transition duration-200 ease-out focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-        highlighted 
-          ? 'border-gray-900 bg-gray-50 ring-1 ring-gray-900 shadow-md' 
-          : isSelected 
-            ? 'border-gray-900 bg-white ring-1 ring-gray-900 shadow-md z-10' 
-            : 'border-[var(--tf-card-border)] bg-white shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] hover:-translate-y-1 hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.08)]'
+        highlighted
+          ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500 shadow-md'
+          : isSelected
+            ? 'border-indigo-600 bg-white ring-1 ring-indigo-600 shadow-md z-10'
+            : 'border-[var(--tf-card-border)] bg-white shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] hover:-translate-y-1 hover:border-indigo-200 hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.08)]'
       } ${isDragging ? 'z-20 cursor-grabbing shadow-2xl' : 'cursor-grab'} ${isEntering ? 'tf-enter' : ''} ${isLeaving ? 'tf-leave' : ''}`}
     >
       <div className="flex items-start gap-3">

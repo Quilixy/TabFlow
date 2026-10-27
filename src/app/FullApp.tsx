@@ -784,7 +784,13 @@ export default function FullApp() {
   return (
     <div className="flex h-full flex-col text-gray-900">
       <header className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4 py-2.5">
-        <h1 className="text-base font-semibold">TabFlow</h1>
+        <h1 className="flex items-center gap-2 text-base font-semibold">
+          <span
+            aria-hidden="true"
+            className="size-3 rounded-[4px] bg-gradient-to-br from-indigo-400 to-indigo-700 shadow-[0_0_0_3px_var(--color-indigo-100)]"
+          />
+          TabFlow
+        </h1>
         <div className="ml-auto flex items-center gap-2">
           <Button size="sm" onClick={() => setComposer({ mode: 'empty', parentId: currentId })} disabled={isBusy}>
             <PlusIcon />
@@ -875,7 +881,7 @@ export default function FullApp() {
                     type="button"
                     onClick={() => navigate(w.id)}
                     className={`max-w-48 truncate rounded px-1.5 py-1 hover:bg-gray-100 ${
-                      i === breadcrumb.length - 1 ? 'font-semibold text-gray-900' : 'text-gray-600'
+                      i === breadcrumb.length - 1 ? 'font-semibold text-indigo-700' : 'text-gray-600'
                     }`}
                   >
                     {w.name}
