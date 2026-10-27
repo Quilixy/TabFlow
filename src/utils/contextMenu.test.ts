@@ -39,4 +39,9 @@ describe('sağ tık menüsü', () => {
     expect(folderIdFromMenuItem('tabflow-last')).toBe('');
     expect(folderIdFromMenuItem(MENU_ROOT_ID)).toBeNull();
   });
+
+  it('sabitlenen klasörleri en üste koyar', () => {
+    const map = { a: folder('a', 9), b: { ...folder('b', 1), favorite: true } };
+    expect(contextMenuItems(map, null).slice(1).map((i) => i.title)).toEqual(['B', 'A']);
+  });
 });

@@ -99,6 +99,7 @@ interface CanvasProps {
   onRenameCommit: (id: string, name: string) => void;
   onStyleFolder: (id: string, anchor: Point) => void;
   onDeleteFolder: (id: string) => void;
+  onToggleFavorite: (id: string) => void;
   onRestoreFolder: (id: string, recursive: boolean) => void;
   onNewSubfolder: (parentId: string | null) => void;
   onDropOpenTab: (folderId: string | null, tab: OpenTab, closeOriginal: boolean, position?: Point) => void;
@@ -130,6 +131,7 @@ export function Canvas({
   onRenameCommit,
   onStyleFolder,
   onDeleteFolder,
+  onToggleFavorite,
   onRestoreFolder,
   onNewSubfolder,
   onDropOpenTab,
@@ -477,6 +479,11 @@ export function Canvas({
     entries.push(
       { type: 'separator' },
       { label: 'Alt klasör ekle', onSelect: () => onNewSubfolder(target.id), disabled },
+      {
+        label: target.favorite ? 'Sabitlemeyi kaldır' : 'Üste sabitle',
+        onSelect: () => onToggleFavorite(target.id),
+        disabled,
+      },
       { label: 'Yeniden adlandır (F2)', onSelect: () => onRenameFolder(target.id), disabled },
       { label: 'Renk ve simge…', onSelect: () => onStyleFolder(target.id, anchor), disabled },
       { type: 'separator' },

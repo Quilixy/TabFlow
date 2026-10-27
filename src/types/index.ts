@@ -31,6 +31,10 @@ export interface Workspace {
   color?: string;
   /** Klasör simgesi (FolderIconId). Yoksa klasör simgesi. */
   icon?: string;
+  /** Kardeşleri arasında elle verilen sıra (küçük önce). Yoksa ada göre, sıralı olanların ardından. */
+  order?: number;
+  /** Sabitlenmiş (sık kullanılan): kardeşlerinin en üstünde durur. */
+  favorite?: boolean;
 }
 
 /** Menüler ve hedef listeleri için klasörün hafif gösterimi. name = "Üst / Alt" yolu. */

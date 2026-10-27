@@ -62,9 +62,11 @@ export function normalizeWorkspaces(raw: unknown): WorkspaceMap {
       };
     });
 
-    const style: Pick<Workspace, 'color' | 'icon'> = {};
+    const style: Pick<Workspace, 'color' | 'icon' | 'order' | 'favorite'> = {};
     if (isFolderColor(ws.color)) style.color = ws.color;
     if (isFolderIcon(ws.icon)) style.icon = ws.icon;
+    if (isNum(ws.order)) style.order = ws.order;
+    if (ws.favorite === true) style.favorite = true;
 
     result[id] = {
       ...style,
@@ -116,7 +118,9 @@ const sameFolderFields = (a: Workspace, b: Workspace): boolean =>
   a.x === b.x &&
   a.y === b.y &&
   a.color === b.color &&
-  a.icon === b.icon;
+  a.icon === b.icon &&
+  a.order === b.order &&
+  a.favorite === b.favorite;
 
 /**
  * `next` haritasında, `prev` ile alan alan aynı kalan klasör ve sekme nesnelerini `prev`dekilerle değiştirir.
@@ -152,7 +156,20 @@ export function shareStructure(prev: WorkspaceMap | null, next: WorkspaceMap): W
   return allSame ? prev : result;
 }
 
-/** parentId → ada göre sıralı çocuk klasörler. Kök için anahtar null. */
+/**
+ * Kardeş klasörlerin sırası: sabitlenenler en üstte; sonra elle sıralananlar (order); sıra verilmemişler
+ * (ör. elle sıralamadan sonra eklenen yeni klasör) onların ardından ada göre.
+ */
+export function compareSiblings(a: Workspace, b: Workspace): number {
+  if (Boolean(a.favorite) !== Boolean(b.favorite)) return a.favorite ? -1 : 1;
+  const aHas = a.order !== undefined;
+  const bHas = b.order !== undefined;
+  if (aHas && bHas && a.order !== b.order) return (a.order as number) - (b.order as number);
+  if (aHas !== bHas) return aHas ? -1 : 1;
+  return collator.compare(a.name, b.name);
+}
+
+/** parentId → sıralı çocuk klasörler (bkz. compareSiblings). Kök için anahtar null. */
 export function buildChildrenIndex(map: WorkspaceMap): Map<string | null, Workspace[]> {
   const index = new Map<string | null, Workspace[]>();
   for (const workspace of Object.values(map)) {
@@ -160,7 +177,7 @@ export function buildChildrenIndex(map: WorkspaceMap): Map<string | null, Worksp
     if (list) list.push(workspace);
     else index.set(workspace.parentId, [workspace]);
   }
-  for (const list of index.values()) list.sort((a, b) => collator.compare(a.name, b.name));
+  for (const list of index.values()) list.sort(compareSiblings);
   return index;
 }
 

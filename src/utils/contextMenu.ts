@@ -39,9 +39,10 @@ export function contextMenuItems(map: WorkspaceMap, lastFolderId: string | null)
       { id: 'tabflow-sep', parentId: MENU_ROOT_ID, type: 'separator' },
     );
   }
+  // Sabitlenenler önce, sonra en son güncellenenler.
   const recent = folders
     .filter((f) => f.id !== last?.id)
-    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .sort((a, b) => Number(Boolean(b.favorite)) - Number(Boolean(a.favorite)) || b.updatedAt - a.updatedAt)
     .slice(0, MENU_FOLDER_LIMIT);
   for (const folder of recent) {
     items.push({ id: FOLDER_PREFIX + folder.id, parentId: MENU_ROOT_ID, title: menuTitle(pathLabel(map, folder.id)) });

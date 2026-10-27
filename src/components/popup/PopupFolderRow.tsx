@@ -4,7 +4,7 @@ import { folderColorCss } from '../../utils/folderStyle';
 import { Favicon } from '../Favicon';
 import { Button } from '../ui/Button';
 import { FolderGlyph } from '../ui/FolderGlyph';
-import { CheckIcon, ChevronDownIcon, ExternalLinkIcon, PlusIcon } from '../ui/icons';
+import { CheckIcon, ChevronDownIcon, ExternalLinkIcon, PinIcon, PlusIcon } from '../ui/icons';
 import { IconButton } from '../ui/IconButton';
 
 const COLLAPSED_FAVICONS = 4;
@@ -110,8 +110,11 @@ export function PopupFolderRow({
             <FolderGlyph icon={workspace.icon} color={workspace.color} width={15} height={15} />
           </span>
           <span className="ml-1 min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium text-gray-900" title={workspace.name}>
-              {workspace.name}
+            <span className="flex items-center gap-1 text-sm font-medium text-gray-900" title={workspace.name}>
+              <span className="truncate">{workspace.name}</span>
+              {workspace.favorite && (
+                <PinIcon width={11} height={11} className="shrink-0 text-gray-400" aria-label="Sabitlenmiş" role="img" />
+              )}
               {parentName && <span className="sr-only">, “{parentName}” içinde</span>}
             </span>
             <span className="flex items-center gap-1.5 text-xs text-gray-500">

@@ -14,9 +14,10 @@ import { useUiStore } from '../../store/useUiStore';
 import type { Point, Workspace, WorkspaceMap } from '../../types';
 import { DND_FOLDER_MIME, DND_OPEN_TAB_MIME, readOpenTabDrop, ROOT_DROP_ID } from '../../utils/dnd';
 import { normalizeQuery } from '../../utils/search';
+import type { DropPlacement } from '../../utils/workspaceOps';
 import { collectSubtree, computeVisibleIds, countTabs, flattenTree, type TreeRow } from '../../utils/workspaceTree';
 import { FolderGlyph } from '../ui/FolderGlyph';
-import { ChevronDownIcon, HomeIcon, MoreIcon, PlusIcon, SearchIcon, XIcon } from '../ui/icons';
+import { ChevronDownIcon, HomeIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon, XIcon } from '../ui/icons';
 import { IconButton } from '../ui/IconButton';
 import { InlineRename } from '../ui/InlineRename';
 import type { MenuEntry } from '../ui/menu';
@@ -51,7 +52,14 @@ interface FolderTreeProps {
   onRestore: (id: string, recursive: boolean) => void;
   onDropOpenTab: (folderId: string, tab: OpenTab, closeOriginal: boolean) => void;
   onMoveFolder: (folderId: string, newParentId: string | null) => void;
+  /** Klasörü bir kardeşinin önüne/arkasına taşır (elle sıralama). */
+  onReorderFolder: (folderId: string, targetId: string, placement: DropPlacement) => void;
+  onToggleFavorite: (id: string) => void;
 }
+
+/** Satırın üst/alt çeyreğine bırakmak araya yerleştirir; ortasına bırakmak içine taşır. */
+type RowDropZone = DropPlacement | 'inside';
+const EDGE_RATIO = 0.27;
 
 export function FolderTree({
   workspaces,
@@ -69,6 +77,8 @@ export function FolderTree({
   onRestore,
   onDropOpenTab,
   onMoveFolder,
+  onReorderFolder,
+  onToggleFavorite,
 }: FolderTreeProps) {
   const expanded = useUiStore((s) => s.expanded);
   const setExpanded = useUiStore((s) => s.setExpanded);
@@ -81,6 +91,7 @@ export function FolderTree({
   const { menu, openAt } = useContextMenu();
 
   const [hoverRowId, setHoverRowId] = useState<string | null>(null);
+  const [hoverZone, setHoverZone] = useState<RowDropZone>('inside');
   const [isSearchOpen, setIsSearchOpen] = useState(query !== '');
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(600);
@@ -141,6 +152,11 @@ export function FolderTree({
     }
     entries.push(
       { type: 'separator' },
+      {
+        label: workspace.favorite ? 'Sabitlemeyi kaldır' : 'Üste sabitle',
+        onSelect: () => onToggleFavorite(workspace.id),
+        disabled,
+      },
       { label: 'Yeniden adlandır (F2)', onSelect: () => onRename(workspace.id), disabled },
       { label: 'Renk ve simge…', onSelect: () => onStyle(workspace.id, anchor), disabled },
       { label: 'Klasörü sil', onSelect: () => onDelete(workspace.id), danger: true, disabled },
@@ -163,6 +179,21 @@ export function FolderTree({
   const handleRowKeyDown = (e: KeyboardEvent<HTMLDivElement>, row: TreeRow) => {
     if (e.target !== e.currentTarget) return;
     const position = rowsRef.current.findIndex((r) => r.workspace.id === row.workspace.id);
+    // Alt+↑/↓: klasörü kardeşleri arasında bir sıra yukarı/aşağı taşı (sabitlenmiş grubun içinde kalır).
+    if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      e.preventDefault();
+      if (disabled) return;
+      const group = (index.get(row.workspace.parentId) ?? []).filter(
+        (w) => Boolean(w.favorite) === Boolean(row.workspace.favorite),
+      );
+      const at = group.findIndex((w) => w.id === row.workspace.id);
+      const neighbor = group[e.key === 'ArrowUp' ? at - 1 : at + 1];
+      if (neighbor) {
+        onReorderFolder(row.workspace.id, neighbor.id, e.key === 'ArrowUp' ? 'before' : 'after');
+        requestAnimationFrame(() => focusRow(rowsRef.current.findIndex((r) => r.workspace.id === row.workspace.id)));
+      }
+      return;
+    }
     switch (e.key) {
       case 'ArrowDown':
         focusRow(position + 1);
@@ -218,6 +249,14 @@ export function FolderTree({
     e.preventDefault();
     e.dataTransfer.dropEffect = e.altKey ? 'copy' : 'move';
     setHoverRowId(targetId);
+    // Klasör sürüklenirken satırın kenarları "araya koy", ortası "içine taşı" (kökte yalnızca içine).
+    let zone: RowDropZone = 'inside';
+    if (targetId !== ROOT_DROP_ID && e.dataTransfer.types.includes(DND_FOLDER_MIME)) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const ratio = (e.clientY - rect.top) / rect.height;
+      zone = ratio < EDGE_RATIO ? 'before' : ratio > 1 - EDGE_RATIO ? 'after' : 'inside';
+    }
+    setHoverZone(zone);
   };
 
   // Satırın içindeki bir alt öğeye geçmek "ayrılmak" sayılmaz (aksi halde vurgu kısa süre kapanıp açılır).
@@ -229,7 +268,9 @@ export function FolderTree({
 
   const handleDrop = (e: DragEvent<HTMLElement>, target: string | null) => {
     e.preventDefault();
+    const zone = hoverZone;
     setHoverRowId(null);
+    setHoverZone('inside');
     if (disabled) return;
 
     if (e.dataTransfer.types.includes(DND_OPEN_TAB_MIME)) {
@@ -239,7 +280,9 @@ export function FolderTree({
     }
 
     const folderId = e.dataTransfer.getData(DND_FOLDER_MIME);
-    if (folderId && folderId !== target) onMoveFolder(folderId, target);
+    if (!folderId || folderId === target) return;
+    if (target !== null && zone !== 'inside') onReorderFolder(folderId, target, zone);
+    else onMoveFolder(folderId, target);
   };
 
   // Klavyeyle ağaca girişte odaklanacak tek satır (roving tabindex): seçili satır, yoksa ilk satır.
@@ -248,7 +291,9 @@ export function FolderTree({
   const renderRow = (row: TreeRow) => {
     const { workspace, depth, hasChildren, isOpen } = row;
     const isSelected = workspace.id === selectedId;
-    const isDropHover = hoverRowId === workspace.id || dropHoverId === workspace.id;
+    const isRowHover = hoverRowId === workspace.id;
+    const edgeZone = isRowHover && hoverZone !== 'inside' ? hoverZone : null;
+    const isDropHover = (isRowHover && edgeZone === null) || dropHoverId === workspace.id;
     const isRenaming = renamingId === workspace.id && renamingSource === 'tree';
 
     return (
@@ -276,7 +321,7 @@ export function FolderTree({
         }}
         onClick={() => onSelect(workspace.id)}
         style={{ height: ROW_HEIGHT, paddingLeft: 6 + depth * INDENT_PX }}
-        className={`group flex cursor-pointer items-center gap-1 pr-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset ${enterIds[workspace.id] ? 'tf-enter' : ''} ${leavingIds[workspace.id] ? 'tf-leave' : ''} ${
+        className={`group relative flex cursor-pointer items-center gap-1 pr-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset ${enterIds[workspace.id] ? 'tf-enter' : ''} ${leavingIds[workspace.id] ? 'tf-leave' : ''} ${
           isDropHover
             ? 'bg-indigo-100 ring-1 ring-indigo-400 ring-inset'
             : isSelected
@@ -284,6 +329,16 @@ export function FolderTree({
               : 'text-gray-800 hover:bg-gray-100'
         }`}
       >
+        {edgeZone && (
+          // Araya bırakma göstergesi: satırın üst ya da alt kenarında çizgi
+          <span
+            aria-hidden="true"
+            className={`pointer-events-none absolute right-1 h-0.5 rounded-full bg-indigo-500 ${
+              edgeZone === 'before' ? 'top-0' : 'bottom-0'
+            }`}
+            style={{ left: 6 + depth * INDENT_PX }}
+          />
+        )}
         {hasChildren ? (
           <button
             type="button"
@@ -320,6 +375,9 @@ export function FolderTree({
           >
             {workspace.name}
           </span>
+        )}
+        {workspace.favorite && (
+          <PinIcon width={12} height={12} className="shrink-0 text-gray-400" aria-label="Sabitlenmiş" role="img" />
         )}
         {workspace.tabs.length > 0 && <span className="shrink-0 text-xs text-gray-500">{workspace.tabs.length}</span>}
         <IconButton

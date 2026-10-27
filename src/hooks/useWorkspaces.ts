@@ -8,7 +8,14 @@ import { mergeWorkspaces, undoImport, type ImportUndo, type MergeStats } from '.
 import { isFolderColor, isFolderIcon } from '../utils/folderStyle';
 import type { Snapshot } from '../utils/snapshots';
 import { normalizeTrash, pushTrash, removeTrashEntry, type TrashEntry } from '../utils/trash';
-import { appendTab, restoreTrashEntry, toSavedTab } from '../utils/workspaceOps';
+import {
+  appendTab,
+  reorderFolder as reorderFolderOp,
+  restoreTrashEntry,
+  setFolderFavorite,
+  toSavedTab,
+  type DropPlacement,
+} from '../utils/workspaceOps';
 import {
   buildChildrenIndex,
   canReparent,
@@ -305,6 +312,21 @@ export function useWorkspaces() {
     [update],
   );
 
+  /** Klasörü bir kardeşinin önüne/arkasına taşır (elle sıralama; gerekirse üst klasörü değişir). */
+  const reorderFolder = useCallback(
+    async (folderId: string, targetId: string, placement: DropPlacement): Promise<void> => {
+      await update((current) => reorderFolderOp(current, folderId, targetId, placement, Date.now()));
+    },
+    [update],
+  );
+
+  const setFavorite = useCallback(
+    async (folderId: string, favorite: boolean): Promise<void> => {
+      await update((current) => setFolderFavorite(current, folderId, favorite));
+    },
+    [update],
+  );
+
   const setFolderPosition = useCallback(
     async (folderId: string, x: number, y: number): Promise<void> => {
       await update((current) => {
@@ -582,6 +604,8 @@ export function useWorkspaces() {
     deleteFromTrash,
     emptyTrash,
     moveFolder,
+    reorderFolder,
+    setFavorite,
     setFolderPosition,
     applyLayout,
     addOpenTab,

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { SavedTab, Workspace, WorkspaceMap } from '../types';
 import type { TrashEntry } from './trash';
-import { appendTab, restoreTrashEntry } from './workspaceOps';
+import { buildChildrenIndex, normalizeWorkspaces } from './workspaceTree';
+import { appendTab, reorderFolder, restoreTrashEntry, setFolderFavorite } from './workspaceOps';
 
 const tab = (id: string, url: string): SavedTab => ({ id, url, title: url, favIconUrl: null, pinned: false, x: 0, y: 0 });
 const folder = (id: string, tabs: SavedTab[] = [], parentId: string | null = null): Workspace => ({
@@ -62,5 +63,56 @@ describe('restoreTrashEntry', () => {
     expect(recreated.a.name).toBe('A');
     expect(recreated.a.tabs).toHaveLength(1);
     expect(restoreTrashEntry(recreated, tabEntry, 6)).toBe(recreated);
+  });
+});
+
+describe('klasör sırası ve sabitleme', () => {
+  const names = (map: WorkspaceMap, parentId: string | null = null) =>
+    (buildChildrenIndex(map).get(parentId) ?? []).map((w) => w.id);
+  const base = (): WorkspaceMap => ({ a: folder('a'), b: folder('b'), c: folder('c') });
+
+  it('varsayılan sıra ada göre; sabitlenen en üste çıkar', () => {
+    expect(names(base())).toEqual(['a', 'b', 'c']);
+    expect(names(setFolderFavorite(base(), 'c', true))).toEqual(['c', 'a', 'b']);
+  });
+
+  it('klasörü bir kardeşin önüne/arkasına taşır ve tüm listeyi sıralı yapar', () => {
+    const moved = reorderFolder(base(), 'c', 'a', 'before', 5);
+    expect(names(moved)).toEqual(['c', 'a', 'b']);
+    expect(['a', 'b', 'c'].map((id) => moved[id].order)).toEqual([1, 2, 0]);
+    expect(names(reorderFolder(moved, 'c', 'b', 'after', 6))).toEqual(['a', 'b', 'c']);
+  });
+
+  it('elle sıralamadan sonra eklenen klasör sıralıların ardına gelir', () => {
+    const moved = reorderFolder(base(), 'c', 'a', 'before', 5);
+    expect(names({ ...moved, aa: folder('aa') })).toEqual(['c', 'a', 'b', 'aa']);
+  });
+
+  it('başka bir üst klasördeki kardeşin yanına bırakılınca oraya taşınır', () => {
+    const map: WorkspaceMap = { ...base(), x: folder('x', [], 'a') };
+    const moved = reorderFolder(map, 'c', 'x', 'after', 9);
+    expect(moved.c.parentId).toBe('a');
+    expect(moved.c.updatedAt).toBe(9);
+    expect(names(moved, 'a')).toEqual(['x', 'c']);
+  });
+
+  it('sabitlenmiş grubun içine bırakılan klasör sabitlenir, dışına bırakılan çözülür', () => {
+    const pinned = setFolderFavorite(base(), 'a', true);
+    const joined = reorderFolder(pinned, 'c', 'a', 'after', 1);
+    expect(joined.c.favorite).toBe(true);
+    expect(names(joined)).toEqual(['a', 'c', 'b']);
+    const left = reorderFolder(joined, 'a', 'b', 'after', 2);
+    expect(left.a.favorite).toBeUndefined();
+  });
+
+  it('klasör kendi alt klasörünün yanına taşınamaz', () => {
+    const map: WorkspaceMap = { a: folder('a'), x: folder('x', [], 'a') };
+    expect(() => reorderFolder(map, 'a', 'x', 'before', 1)).toThrow('kendi alt klasörüne');
+  });
+
+  it('sıra ve sabitleme normalize ile korunur', () => {
+    const moved = setFolderFavorite(reorderFolder(base(), 'c', 'a', 'before', 5), 'b', true);
+    const roundTrip = normalizeWorkspaces(JSON.parse(JSON.stringify(moved)));
+    expect(names(roundTrip)).toEqual(['b', 'c', 'a']);
   });
 });

@@ -1,6 +1,6 @@
 import type { PageInfo, Point, SavedTab, Workspace, WorkspaceMap } from '../types';
 import type { TrashEntry } from './trash';
-import { gridPosition, siblingItemCount } from './workspaceTree';
+import { canReparent, compareSiblings, gridPosition, siblingItemCount } from './workspaceTree';
 
 /**
  * Klasör haritası üzerinde saf işlemler. Hem React kancası (useWorkspaces) hem service worker (sağ tık menüsü,
@@ -65,4 +65,56 @@ export function restoreTrashEntry(map: WorkspaceMap, entry: TrashEntry, now: num
   const tab = tabs.some((t) => t.id === entry.tab.id) ? { ...entry.tab, id: crypto.randomUUID() } : entry.tab;
   tabs.splice(Math.min(entry.index, tabs.length), 0, tab);
   return { ...map, [folder.id]: { ...folder, updatedAt: now, tabs } };
+}
+
+export type DropPlacement = 'before' | 'after';
+
+/**
+ * Klasörü bir kardeşinin önüne/arkasına taşır (gerekirse onun üst klasörüne geçer). Yeni kardeş listesindeki
+ * herkes 0, 1, 2… sırasını alır: elle sıralama bir kez yapılınca tüm liste kalıcı sıralı olur.
+ * Taşıma döngü yaratacaksa hata verir.
+ */
+export function reorderFolder(
+  map: WorkspaceMap,
+  folderId: string,
+  targetId: string,
+  placement: DropPlacement,
+  now: number,
+): WorkspaceMap {
+  const folder = map[folderId];
+  const target = map[targetId];
+  if (!folder || !target) throw new Error('Klasör bulunamadı.');
+  if (folderId === targetId) return map;
+  const parentId = target.parentId;
+  if (!canReparent(map, folderId, parentId)) throw new Error('Bir klasör kendi alt klasörüne taşınamaz.');
+  // Sabitlenmiş ve sabitlenmemiş klasörler ayrı gruplarda durur: hedefin grubuna katılır.
+  const favorite = Boolean(target.favorite);
+
+  const siblings = Object.values(map)
+    .filter((w) => w.parentId === parentId && w.id !== folderId && Boolean(w.favorite) === favorite)
+    .sort(compareSiblings);
+  const at = siblings.findIndex((w) => w.id === targetId) + (placement === 'after' ? 1 : 0);
+  const moved: Workspace = { ...folder, favorite: favorite || undefined };
+  if (!moved.favorite) delete moved.favorite;
+  if (folder.parentId !== parentId) {
+    const pos = gridPosition(siblingItemCount(map, parentId));
+    Object.assign(moved, { parentId, x: pos.x, y: pos.y, updatedAt: now });
+  }
+  siblings.splice(at, 0, moved);
+
+  const next = { ...map };
+  siblings.forEach((w, i) => {
+    if (w.order !== i || w === moved) next[w.id] = { ...w, order: i };
+  });
+  return next;
+}
+
+/** Klasörü sabitler ya da sabitlemeyi kaldırır (sıralamayı etkiler, updatedAt'i değil). */
+export function setFolderFavorite(map: WorkspaceMap, folderId: string, favorite: boolean): WorkspaceMap {
+  const folder = map[folderId];
+  if (!folder || Boolean(folder.favorite) === favorite) return map;
+  const next: Workspace = { ...folder };
+  if (favorite) next.favorite = true;
+  else delete next.favorite;
+  return { ...map, [folderId]: next };
 }

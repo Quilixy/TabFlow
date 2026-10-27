@@ -23,6 +23,7 @@ import { backupFileName, createBackup, MAX_BACKUP_BYTES, parseBackup, serializeB
 import { downloadTextFile } from '../utils/download';
 import { formatAgo, formatDateTime, formatRestoreMessage, formatSaveAllMessage } from '../utils/format';
 import type { Snapshot } from '../utils/snapshots';
+import type { DropPlacement } from '../utils/workspaceOps';
 import { LEAVE_ANIMATION_MS } from '../utils/theme';
 import { NAVIGATE_KEY, parseNavigateRequest } from '../utils/uiSync';
 import { canReparent, collectSubtree, countTabs, getPath, pathLabel } from '../utils/workspaceTree';
@@ -57,6 +58,8 @@ export default function FullApp() {
     deleteFromTrash,
     emptyTrash,
     moveFolder,
+    reorderFolder,
+    setFavorite,
     setFolderPosition,
     applyLayout,
     addOpenTab,
@@ -296,6 +299,25 @@ export default function FullApp() {
       });
     },
     [workspaces, run, moveFolder, showToast, nameOf, expandMany],
+  );
+
+  const handleReorderFolder = useCallback(
+    (folderId: string, targetId: string, placement: DropPlacement) => {
+      void run(`reorder:${folderId}`, () => reorderFolder(folderId, targetId, placement));
+    },
+    [run, reorderFolder],
+  );
+
+  const handleToggleFavorite = useCallback(
+    (id: string) => {
+      const folder = workspaces[id];
+      if (!folder) return;
+      void run(`favorite:${id}`, async () => {
+        await setFavorite(id, !folder.favorite);
+        showToast(folder.favorite ? `“${folder.name}” sabitlemesi kaldırıldı.` : `“${folder.name}” üste sabitlendi.`);
+      });
+    },
+    [workspaces, run, setFavorite, showToast],
   );
 
   const handleSetTabPosition = useCallback(
@@ -668,6 +690,8 @@ export default function FullApp() {
             onRestore={handleRestore}
             onDropOpenTab={handleDropOpenTab}
             onMoveFolder={handleMoveFolder}
+            onReorderFolder={handleReorderFolder}
+            onToggleFavorite={handleToggleFavorite}
           />
         </aside>
 
@@ -756,6 +780,7 @@ export default function FullApp() {
                 onRenameCommit={handleRenameCommit}
                 onStyleFolder={handleStyle}
                 onDeleteFolder={handleDelete}
+                onToggleFavorite={handleToggleFavorite}
                 onRestoreFolder={handleRestore}
                 onNewSubfolder={(parentId) => setComposer({ mode: 'empty', parentId })}
                 onDropOpenTab={handleDropOpenTab}
