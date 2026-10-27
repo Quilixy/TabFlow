@@ -46,6 +46,7 @@
     "unlimitedStorage",
     "favicon",
     "contextMenus",
-    "tabGroups"
+    "tabGroups",
+    "downloads"
   ]
 }

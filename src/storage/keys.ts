@@ -10,3 +10,5 @@ export const SNAPSHOT_META_KEY = 'snapshotMeta';
 export const LAST_FOLDER_KEY = 'lastFolderId';
 /** Çözülmüş arayüz dili ('tr' | 'en'): service worker sağ tık menüsü ve rozetler için okur. */
 export const LANGUAGE_KEY = 'language';
+/** Diske otomatik yedek ayarı ve son zamanı (AutoExportSettings). */
+export const AUTO_EXPORT_KEY = 'autoExport';

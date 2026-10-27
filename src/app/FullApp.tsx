@@ -25,6 +25,9 @@ import { downloadTextFile } from '../utils/download';
 import { formatAgo, formatDateTime, formatSaveAllMessage } from '../utils/format';
 import { formatRestoreResult, type RestoreMode } from '../utils/restore';
 import type { Snapshot } from '../utils/snapshots';
+import { AUTO_EXPORT_INTERVALS, normalizeAutoExport, type AutoExportInterval } from '../utils/autoExport';
+import { AUTO_EXPORT_KEY } from '../storage/keys';
+import { useStorage } from '../hooks/useStorage';
 import type { DropPlacement } from '../utils/workspaceOps';
 import { LEAVE_ANIMATION_MS } from '../utils/theme';
 import { NAVIGATE_KEY, parseNavigateRequest } from '../utils/uiSync';
@@ -594,6 +597,20 @@ export default function FullApp() {
     [run, confirm, importWorkspaces, revertImport, showToast],
   );
 
+  // ---- Diske otomatik yedek ayarı (service worker uygular) ----------------------------
+  const { data: rawAutoExport } = useStorage<unknown>(AUTO_EXPORT_KEY, null);
+  const autoExport = normalizeAutoExport(rawAutoExport);
+  const handleAutoExportInterval = useCallback(
+    (interval: AutoExportInterval) => {
+      void run('auto-export', async () => {
+        const current = normalizeAutoExport((await chrome.storage.local.get(AUTO_EXPORT_KEY))[AUTO_EXPORT_KEY]);
+        await chrome.storage.local.set({ [AUTO_EXPORT_KEY]: { ...current, interval } });
+        showToast(t('autoExport.changed', { interval: t(`autoExport.${interval}`) }));
+      });
+    },
+    [run, showToast],
+  );
+
   const handleRestoreSnapshot = useCallback(
     (snapshot: Snapshot) => {
       void run('restore-snapshot', async () => {
@@ -631,6 +648,17 @@ export default function FullApp() {
               onSelect: () => handleRestoreSnapshot(s),
               disabled: isBusy,
             }))),
+        { type: 'separator' },
+        { type: 'heading', label: t('autoExport.heading') },
+        ...AUTO_EXPORT_INTERVALS.map((interval) => ({
+          // Seçili aralık onay işaretiyle (menü bileşeninin seçim durumu yok).
+          label: `${autoExport.interval === interval ? '✓' : ' '} ${t(`autoExport.${interval}`)}`,
+          onSelect: () => handleAutoExportInterval(interval),
+        })),
+        {
+          type: 'heading',
+          label: autoExport.lastAt ? t('autoExport.last', { ago: formatAgo(autoExport.lastAt) }) : t('autoExport.never'),
+        },
       ]);
     // Liste okunamazsa menü yine açılsın (yalnızca otomatik yedekler eksik kalır).
     listSnapshots().then(show, () => show([]));

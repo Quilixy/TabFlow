@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, folder, SITE, test } from './fixtures';
 
 test.describe('tam ekran uygulama', () => {
@@ -143,5 +144,24 @@ test.describe('tam ekran uygulama', () => {
 
     await app.reload();
     await expect(app.getByRole('button', { name: 'New folder', exact: true })).toBeVisible();
+  });
+
+  test('klasörler diske otomatik yedeklenir ve dosya geri yüklenebilir biçimdedir', async ({ context, seed, readStorage }) => {
+    await seed({ a: folder('a', 'Önemli', [{ url: `${SITE}/x`, title: 'X' }]) });
+    const worker = context.serviceWorkers()[0];
+    // Playwright indirmeleri kendi geçici klasörüne rastgele adla kaydeder; dosya adını birim testi doğrular.
+    // Burada dosyanın gerçekten yazıldığı ve geri yüklenebilir bir TabFlow yedeği olduğu doğrulanır.
+    const findDownload = () =>
+      worker.evaluate(async () => {
+        const items = await chrome.downloads.search({ state: 'complete' });
+        return items.find((d) => d.url.startsWith('data:application/json'))?.filename ?? null;
+      });
+    await expect.poll(findDownload, { timeout: 10_000 }).not.toBeNull();
+
+    const file = (await findDownload())!;
+    const backup = JSON.parse(readFileSync(file, 'utf8'));
+    expect(backup.app).toBe('TabFlow');
+    expect(backup.workspaces.a.name).toBe('Önemli');
+    expect((await readStorage<{ lastAt: number | null }>('autoExport'))?.lastAt).toEqual(expect.any(Number));
   });
 });

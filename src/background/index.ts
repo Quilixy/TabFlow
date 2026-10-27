@@ -1,4 +1,4 @@
-import { LANGUAGE_KEY, LAST_FOLDER_KEY, TRASH_KEY, WORKSPACES_KEY } from '../storage/keys';
+import { AUTO_EXPORT_KEY, LANGUAGE_KEY, LAST_FOLDER_KEY, TRASH_KEY, WORKSPACES_KEY } from '../storage/keys';
 import {
   isWorkspaceChange,
   migrateLegacyWorkspaces,
@@ -14,6 +14,7 @@ import { toOpenTab } from '../utils/tabs';
 import { normalizeTrash, pruneTrash } from '../utils/trash';
 import { isHttpUrl } from '../utils/url';
 import { normalizeWorkspaces } from '../utils/workspaceTree';
+import { maybeAutoExport } from './autoExport';
 import { flashBadge, readWorkspaces, resolveLastFolder, savePageToFolder } from './saveFromBrowser';
 import { detectLanguage, LANGUAGES, setLanguage, t, type Lang } from '../i18n';
 
@@ -154,6 +155,7 @@ chrome.commands.onCommand.addListener((command) => {
 async function maintenance(): Promise<void> {
   await migrateLegacyWorkspaces();
   const now = Date.now();
+  await maybeAutoExport(now).catch((e) => console.error('[TabFlow] diske yedek alınamadı.', e));
   await takeSnapshotIfDue(await readWorkspaces(), now);
   await updateKey<unknown>(TRASH_KEY, [], (raw) => {
     const entries = normalizeTrash(raw);
@@ -177,6 +179,8 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   if (isWorkspaceChange(changes)) {
     snapshotBeforeChange(changes).catch((e) => console.error('[TabFlow] otomatik yedek alınamadı.', e));
+    // Tarayıcı günlerce kapatılmadan kullanılıyorsa diske yedek, açılışı beklemeden bir değişiklikle tetiklenir.
+    maybeAutoExport().catch((e) => console.error('[TabFlow] diske yedek alınamadı.', e));
     // Eski tek anahtara yazılmış harita (eski sürüm, içe aktarma aracı, test) hemen yeni düzene taşınır.
     if (changes[WORKSPACES_KEY]?.newValue !== undefined) {
       migrateLegacyWorkspaces().catch((e) => console.error('[TabFlow] klasörler taşınamadı.', e));
@@ -184,6 +188,8 @@ chrome.storage.onChanged.addListener((changes, area) => {
     scheduleMenuRebuild();
   }
   if (changes[LAST_FOLDER_KEY]) scheduleMenuRebuild();
+  // Diske yedek açıldı ya da sıklaştırıldıysa zamanı geldiyse hemen al (kendi lastAt yazımımız tekrar tetiklemez).
+  if (changes[AUTO_EXPORT_KEY]) maybeAutoExport().catch((e) => console.error('[TabFlow] diske yedek alınamadı.', e));
   const language = changes[LANGUAGE_KEY]?.newValue;
   if (isLang(language)) {
     setLanguage(language);

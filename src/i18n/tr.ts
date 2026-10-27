@@ -317,6 +317,14 @@ export const tr = {
   'popup.openOptionsTitle': 'Açma seçenekleri: alt klasörlerle, sekme grubu, yeni pencere',
   'popup.tabTitle': '{title}\n{url}\nTıkla: arka planda aç',
   'popup.moreTabs': '+{n} sekme daha · tam ekranda gör',
+  // Diske otomatik yedek
+  'autoExport.heading': 'Diske otomatik yedek (İndirilenler/TabFlow)',
+  'autoExport.off': 'Kapalı',
+  'autoExport.daily': 'Günlük',
+  'autoExport.weekly': 'Haftalık',
+  'autoExport.last': 'Son diske yedek: {ago}',
+  'autoExport.never': 'Henüz diske yedek alınmadı',
+  'autoExport.changed': 'Diske otomatik yedek: {interval}.',
 } satisfies Record<string, MessageEntry>;
 
 export type Messages = { [K in keyof typeof tr]: MessageEntry };

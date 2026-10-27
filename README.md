@@ -16,6 +16,7 @@ Sekmelerini klasörlere ve serbest bir tuvale kaydet, kapat ve saniyeler içinde
 - Çok sayıda sekme açılırken ilk 10'u yüklenir, kalanlar tıklanınca yüklenir (RAM şişmez).
 - **Sağ tık menüsü:** bir sayfaya ya da bağlantıya sağ tıkla → *TabFlow'a kaydet* → klasör. Popup'ı açmadan kaydeder; simgedeki rozet sonucu gösterir (✓ kaydedildi, = zaten vardı, ! kaydedilemedi).
 - **Çöp kutusu:** silinen klasörler (alt klasörleriyle) ve sekmeler 30 gün saklanır; tam ekran uygulamadan tek tek geri yüklenir.
+- **Diske otomatik yedek:** klasörlerin JSON yedeği varsayılan olarak haftada bir `İndirilenler/TabFlow/` klasörüne yazılır (*Yedek* menüsünden günlük yapılabilir ya da kapatılabilir). Eklenti kaldırılırsa Chrome eklentinin tüm verisini siler; bu dosyalar kalır ve *Yedekten içe aktar* ile geri yüklenir.
 - **Otomatik yedek:** günde bir kez klasörlerin anlık görüntüsü alınır, son 7'si tutulur (*Yedek* menüsü). Bir yedeğe dönmeden önce o anki hal de yedeklenir.
 - JSON yedeği alma ve geri yükleme. Geri yüklemede mevcut veriler silinmez, aynı klasörün sekmeleri birleştirilir.
 
@@ -63,6 +64,7 @@ Her push ve pull request'te GitHub Actions tip kontrolü, lint, birim testleri, 
 | `favicon` | Site simgelerini Chrome'un önbelleğinden göstermek |
 | `contextMenus` | Sayfa ve bağlantılarda "TabFlow'a kaydet" menüsü |
 | `tabGroups` | Klasörü adı ve rengiyle bir sekme grubu olarak açmak |
+| `downloads` | Otomatik yedeği diske (İndirilenler/TabFlow) yazmak |
 
 Veriler yalnızca bu tarayıcıda (`chrome.storage.local`) tutulur; hiçbir sunucuya gönderilmez.
 

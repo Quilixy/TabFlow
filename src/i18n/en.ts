@@ -319,4 +319,12 @@ export const en: Messages = {
   'popup.openOptionsTitle': 'Open options: with subfolders, as tab group, in new window',
   'popup.tabTitle': '{title}\n{url}\nClick: open in background',
   'popup.moreTabs': (p) => `+${p.n} ${plural(p.n, 'more tab', 'more tabs')} · view full screen`,
+  // Diske otomatik yedek
+  'autoExport.heading': 'Automatic backup to disk (Downloads/TabFlow)',
+  'autoExport.off': 'Off',
+  'autoExport.daily': 'Daily',
+  'autoExport.weekly': 'Weekly',
+  'autoExport.last': 'Last backup to disk: {ago}',
+  'autoExport.never': 'No backup to disk yet',
+  'autoExport.changed': 'Automatic backup to disk: {interval}.',
 };
