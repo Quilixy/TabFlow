@@ -33,6 +33,8 @@ interface UiState {
   draftName: string;
   includePinned: boolean;
   closeOnAdd: boolean;
+  /** "Tümünü kaydet": siteye göre alt klasörlere ayır. */
+  groupByDomain: boolean;
   query: string;
   dropHoverId: string | null;
   renamingId: string | null;
@@ -51,6 +53,7 @@ interface UiState {
   setDraftName: (value: string) => void;
   setIncludePinned: (value: boolean) => void;
   setCloseOnAdd: (value: boolean) => void;
+  setGroupByDomain: (value: boolean) => void;
   setQuery: (value: string) => void;
   setDropHover: (id: string | null) => void;
   setRenamingId: (id: string | null, source?: RenameSource) => void;
@@ -123,6 +126,7 @@ export const useUiStore = create<UiState>()(
       draftName: '',
       includePinned: false,
       closeOnAdd: false,
+      groupByDomain: false,
       query: '',
       dropHoverId: null,
       renamingId: null,
@@ -150,6 +154,7 @@ export const useUiStore = create<UiState>()(
       setDraftName: (draftName) => set({ draftName }),
       setIncludePinned: (includePinned) => set({ includePinned }),
       setCloseOnAdd: (closeOnAdd) => set({ closeOnAdd }),
+      setGroupByDomain: (groupByDomain) => set({ groupByDomain }),
       setQuery: (query) => set({ query }),
       setDropHover: (dropHoverId) => set({ dropHoverId }),
       setRenamingId: (renamingId, renamingSource = 'tree') => set({ renamingId, renamingSource }),
@@ -203,6 +208,7 @@ export const useUiStore = create<UiState>()(
         expanded: s.expanded,
         popupExpanded: s.popupExpanded,
         closeOnAdd: s.closeOnAdd,
+        groupByDomain: s.groupByDomain,
         lastBackupAt: s.lastBackupAt,
         theme: s.theme,
         accent: s.accent,

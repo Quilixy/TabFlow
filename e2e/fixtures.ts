@@ -29,7 +29,8 @@ export const test = base.extend<Fixtures>({
       locale: 'tr-TR',
       args: [`--disable-extensions-except=${EXTENSION_PATH}`, `--load-extension=${EXTENSION_PATH}`, '--lang=tr-TR'],
     });
-    await context.route(`${SITE}/**`, (route) => {
+    // tabflow.test ve alt alan adları (ör. http://haber.tabflow.test) yerelde yanıtlanır.
+    await context.route((url) => url.hostname === 'tabflow.test' || url.hostname.endsWith('.tabflow.test'), (route) => {
       const url = new URL(route.request().url());
       const title = url.searchParams.get('title') ?? url.pathname.slice(1);
       return route.fulfill({ contentType: 'text/html', body: `<!doctype html><title>${title}</title><h1>${title}</h1>` });
@@ -64,7 +65,7 @@ export const test = base.extend<Fixtures>({
   openSite: async ({ context }, use) => {
     await use(async (pathname, title) => {
       const page = await context.newPage();
-      const url = new URL(pathname, SITE);
+      const url = new URL(pathname, SITE); // tam adres de verilebilir (başka bir alt alan adı)
       if (title) url.searchParams.set('title', title);
       await page.goto(url.toString());
       return page;

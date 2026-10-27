@@ -11,10 +11,17 @@ export function formatAgo(timestamp: number, now: number = Date.now()): string {
 }
 
 /** "Tümünü kaydet" sonucu: kaydedilen sayı, açık bırakılan (web dışı) sekmeler ve kapatma hatası. */
-export function formatSaveAllMessage(saved: number, folderName: string, skipped: number, closeFailed: boolean): string {
+export function formatSaveAllMessage(
+  saved: number,
+  folderName: string,
+  skipped: number,
+  closeFailed: boolean,
+  subfolders = 0,
+): string {
   let message = t('saveAll.saved', { n: saved, folder: folderName });
   if (closeFailed) message += t('saveAll.closeFailed');
   message += '.';
+  if (subfolders > 0) message += ` ${t('saveAll.grouped', { n: subfolders })}`;
   if (skipped > 0) message += ` ${t('saveAll.skipped', { n: skipped })}`;
   return message;
 }

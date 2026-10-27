@@ -335,4 +335,7 @@ export const en: Messages = {
   // Yan panel modu
   'popup.backToPopup': 'Switch back to popup',
   'popup.backToPopupHint': 'The toolbar icon will open the popup again.',
+  // Siteye göre gruplama
+  'composer.groupByDomain': 'Group into subfolders by site',
+  'saveAll.grouped': (p) => `Grouped into ${p.n} ${plural(p.n, 'subfolder', 'subfolders')} by site.`,
 };

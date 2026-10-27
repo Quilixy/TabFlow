@@ -7,6 +7,7 @@ Sekmelerini klasörlere ve serbest bir tuvale kaydet, kapat ve saniyeler içinde
 - **Popup:** açık sekmelerin tümünü ya da yalnızca aktif sayfayı tek tıkla bir klasöre kaydet; klasörleri ara, iç içe klasörleri aç, sekmeleri tek tek ya da alt klasörleriyle birlikte geri aç.
 - **Tam ekran uygulama** (`Alt+Shift+T` ya da popup'taki "Tam ekranda aç"): solda klasör ağacı, ortada her klasörün kendi tuvali (sürükle-bırak, yakınlaştır, ızgaraya diz), sağda açık sekmeler.
 - İç içe klasörler, klasör rengi ve simgesi, tema paketleri (açık/koyu, vurgu rengi).
+- **Siteye göre gruplama:** *Tümünü kaydet* sırasında “Siteye göre alt klasörlere ayır” seçilirse aynı siteden en az iki sekme o sitenin adıyla bir alt klasöre gider.
 - **Açma seçenekleri:** klasörü bu pencerede, alt klasörleriyle birlikte, klasörün adı ve renginde bir **sekme grubu** olarak ya da **yeni pencerede** aç.
 - **Sıralama ve sabitleme:** ağaçta bir klasörü başka bir satırın üst/alt kenarına sürükleyerek sırala (`Alt+↑/↓` da olur); "Üste sabitle" ile sık kullanılanları en üstte tut.
 - **Tuvalde çoklu seçim:** `Ctrl`/`Shift` + tık ile seç, `Shift` + boş alanda sürükleyerek alan seç, `Ctrl+A` ile tümünü seç. Seçilenleri birlikte sürükle, bir klasöre bırak, sağ tıkla taşı ya da `Delete` ile sil.

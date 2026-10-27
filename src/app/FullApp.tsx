@@ -206,14 +206,14 @@ export default function FullApp() {
 
   // ---- Klasör oluşturma ----------------------------------------------------------
   const handleComposerSubmit = useCallback(
-    (name: string, includePinned: boolean) => {
+    (name: string, includePinned: boolean, groupByDomain: boolean) => {
       if (!composer) return Promise.resolve(false);
       if (composer.mode === 'saveAll') {
         return run(SAVE_ACTION, async () => {
-          const { folder: created, skipped, closeFailed } = await saveAndClose(name, includePinned, composer.parentId);
+          const { folder: created, saved, subfolders, skipped, closeFailed } = await saveAndClose(name, includePinned, composer.parentId, groupByDomain);
           markEntering([created.id]);
           emitFolderBurst(created.id);
-          showToast(formatSaveAllMessage(created.tabs.length, created.name, skipped, closeFailed));
+          showToast(formatSaveAllMessage(saved, created.name, skipped, closeFailed, subfolders));
         });
       }
       return run(CREATE_ACTION, async () => {

@@ -3,7 +3,9 @@ import type { SavedTab, Workspace, WorkspaceMap } from '../types';
 import type { TrashEntry } from './trash';
 import { buildChildrenIndex, normalizeWorkspaces } from './workspaceTree';
 import {
+  addSavedFolder,
   appendTab,
+  groupPagesByDomain,
   moveItems,
   removeItems,
   reorderFolder,
@@ -168,5 +170,48 @@ describe('toplu işlemler', () => {
     const restored = entries.reduce((m, e) => restoreTrashEntry(m, e, 10), map);
     expect(restored.src.tabs.map((t) => t.id)).toEqual(['t1', 't2', 't3']);
     expect(restored.deep.parentId).toBe('sub');
+  });
+});
+
+describe('siteye göre gruplama', () => {
+  const page = (url: string) => ({ url, title: url, favIconUrl: null, pinned: false });
+  const pages = [
+    page('https://www.github.com/a'),
+    page('https://github.com/b'),
+    page('https://youtube.com/1'),
+    page('https://youtube.com/2'),
+    page('https://youtube.com/3'),
+    page('https://tek.com/x'),
+  ];
+
+  it('en az iki sekmeli siteleri büyükten küçüğe ayırır, kalanı ana klasörde bırakır (www yok sayılır)', () => {
+    const { groups, rest } = groupPagesByDomain(pages);
+    expect(groups.map((g) => [g.host, g.pages.length])).toEqual([
+      ['youtube.com', 3],
+      ['github.com', 2],
+    ]);
+    expect(rest.map((p) => p.url)).toEqual(['https://tek.com/x']);
+  });
+
+  it('hepsi tek sitedense ayırmaz', () => {
+    const same = [page('https://a.com/1'), page('https://a.com/2')];
+    expect(groupPagesByDomain(same)).toEqual({ groups: [], rest: same });
+  });
+
+  it('klasörü ve site alt klasörlerini tek seferde ekler', () => {
+    const { map, subfolders } = addSavedFolder({}, { id: 'root', name: 'Oturum', parentId: null, pages, groupByDomain: true, now: 5 });
+    expect(subfolders).toBe(2);
+    expect(map.root.tabs.map((t) => t.url)).toEqual(['https://tek.com/x']);
+    const children = Object.values(map).filter((w) => w.parentId === 'root');
+    expect(children.map((c) => [c.name, c.tabs.length]).sort()).toEqual([
+      ['github.com', 2],
+      ['youtube.com', 3],
+    ]);
+  });
+
+  it('gruplama kapalıyken hepsi ana klasörde', () => {
+    const { map, subfolders } = addSavedFolder({}, { id: 'root', name: 'Oturum', parentId: null, pages, groupByDomain: false, now: 5 });
+    expect(subfolders).toBe(0);
+    expect(map.root.tabs).toHaveLength(6);
   });
 });

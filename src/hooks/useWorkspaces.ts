@@ -13,6 +13,7 @@ import { currentWindowId, restoreFolder as restoreFolderService } from '../servi
 import type { Snapshot } from '../utils/snapshots';
 import { normalizeTrash, pushTrash, removeTrashEntry, type TrashEntry } from '../utils/trash';
 import {
+  addSavedFolder,
   appendTab,
   moveItems as moveItemsOp,
   removeItems as removeItemsOp,
@@ -62,6 +63,10 @@ function createSharedNormalizer() {
 
 export interface SaveAndCloseResult {
   folder: Workspace;
+  /** Kaydedilen toplam sekme (alt klasörlere ayrılanlar dahil). */
+  saved: number;
+  /** Siteye göre oluşturulan alt klasör sayısı. */
+  subfolders: number;
   /** Kaydedilemeyen (web sayfası olmayan) ve açık bırakılan sekme sayısı. */
   skipped: number;
   /** Kayıt yapıldı ama sekmeler kapatılamadı. */
@@ -149,7 +154,12 @@ export function useWorkspaces() {
    * fırlatılmaz (kayıt zaten yapıldı; yeniden denemek aynı klasörü ikinci kez oluştururdu), closeFailed döner.
    */
   const saveAndClose = useCallback(
-    async (rawName: string, includePinned = false, parentId: string | null = null): Promise<SaveAndCloseResult> => {
+    async (
+      rawName: string,
+      includePinned = false,
+      parentId: string | null = null,
+      groupByDomain = false,
+    ): Promise<SaveAndCloseResult> => {
       const name = requireName(rawName);
       const { tabs: open, skipped } = await getOpenTabs({ includePinned });
       if (open.length === 0) {
@@ -161,25 +171,15 @@ export function useWorkspaces() {
       }
 
       const id = crypto.randomUUID();
+      let subfolders = 0;
       const next = await update((current) => {
-        if (parentId !== null && !current[parentId]) throw new Error(t('error.parentMissing'));
-        const now = Date.now();
-        const pos = gridPosition(siblingItemCount(current, parentId));
-        const folder: Workspace = {
-          id,
-          name,
-          createdAt: now,
-          updatedAt: now,
-          parentId,
-          x: pos.x,
-          y: pos.y,
-          tabs: open.map((tab, i) => toSavedTab(tab, gridPosition(i))),
-        };
-        return { ...current, [id]: folder };
+        const result = addSavedFolder(current, { id, name, parentId, pages: open, groupByDomain, now: Date.now() });
+        subfolders = result.subfolders;
+        return result.map;
       });
       rememberLastFolder(id);
       const closeFailed = await closeAfterSave(open.map((t) => t.id));
-      return { folder: next[id], skipped, closeFailed };
+      return { folder: next[id], saved: open.length, subfolders, skipped, closeFailed };
     },
     [getOpenTabs, closeAfterSave, update],
   );

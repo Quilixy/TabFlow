@@ -182,4 +182,21 @@ test.describe('tam ekran uygulama', () => {
     await expect(app.getByRole('treeitem', { name: /Hedef/ })).toBeVisible(); // üst dal açıldı
     await expect.poll(() => readStorage('tabflow-navigate')).toBeUndefined();
   });
+
+  test('tümünü kaydederken siteye göre alt klasörlere ayırır', async ({ openApp, openSite }) => {
+    await openSite('http://haber.tabflow.test/1');
+    await openSite('http://haber.tabflow.test/2');
+    await openSite('http://blog.tabflow.test/1');
+    const app = await openApp();
+
+    await app.getByRole('button', { name: 'Tüm sekmeleri bir klasöre kaydet ve kapat' }).click();
+    await app.getByPlaceholder('Örn. Araştırma').fill('Oturum');
+    await app.getByLabel('Siteye göre alt klasörlere ayır').check();
+    await app.getByRole('button', { name: 'Kaydet', exact: true }).click();
+
+    await expect(app.getByRole('status')).toContainText('3 sekme “Oturum” klasörüne kaydedildi. 1 siteye göre alt klasörlere ayrıldı.');
+    await app.getByRole('treeitem', { name: /Oturum/ }).click();
+    await expect(app.getByRole('button', { name: /haber\.tabflow\.test klasörü, 2 sekme/ })).toBeVisible();
+    await expect(app.getByRole('button', { name: /^1 \(blog\.tabflow\.test\)/ })).toBeVisible();
+  });
 });

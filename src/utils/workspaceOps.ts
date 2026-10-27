@@ -9,6 +9,7 @@ import {
   siblingItemCount,
 } from './workspaceTree';
 import { t } from '../i18n';
+import { hostOf } from './url';
 
 /**
  * Klasör haritası üzerinde saf işlemler. Hem React kancası (useWorkspaces) hem service worker (sağ tık menüsü,
@@ -242,4 +243,70 @@ export function removeItems(
   }
 
   return { map: entries.length > 0 ? next : map, entries };
+}
+
+/**
+ * Sayfaları siteye göre ayırır: en az `minGroup` sekmesi olan siteler ayrı grup olur (büyükten küçüğe), kalanlar
+ * `rest`te kalır. Sayfaların hepsi tek siteden geliyorsa ayırmanın anlamı yoktur: hepsi `rest`te kalır.
+ */
+export function groupPagesByDomain<T extends PageInfo>(
+  pages: T[],
+  minGroup = 2,
+): { groups: { host: string; pages: T[] }[]; rest: T[] } {
+  const byHost = new Map<string, T[]>();
+  for (const page of pages) {
+    const host = hostOf(page.url);
+    const list = byHost.get(host);
+    if (list) list.push(page);
+    else byHost.set(host, [page]);
+  }
+  if (byHost.size <= 1) return { groups: [], rest: pages };
+  const groups = [...byHost.entries()]
+    .filter(([, list]) => list.length >= minGroup)
+    .map(([host, list]) => ({ host, pages: list }))
+    .sort((a, b) => b.pages.length - a.pages.length || a.host.localeCompare(b.host));
+  const grouped = new Set(groups.flatMap((g) => g.pages));
+  return { groups, rest: pages.filter((p) => !grouped.has(p)) };
+}
+
+/**
+ * "Tümünü kaydet" klasörünü (ve istenirse siteye göre alt klasörlerini) haritaya ekler. Hepsi tek yazmada eklenir.
+ * Kökte alt klasörler önce, ayrılmayan sekmeler onların ardından ızgaraya dizilir.
+ */
+export function addSavedFolder(
+  map: WorkspaceMap,
+  options: { id: string; name: string; parentId: string | null; pages: PageInfo[]; groupByDomain: boolean; now: number },
+): { map: WorkspaceMap; subfolders: number } {
+  const { id, name, parentId, pages, groupByDomain, now } = options;
+  if (parentId !== null && !map[parentId]) throw new Error(t('error.parentMissing'));
+  const { groups, rest } = groupByDomain ? groupPagesByDomain(pages) : { groups: [], rest: pages };
+  const pos = gridPosition(siblingItemCount(map, parentId));
+  const next: WorkspaceMap = {
+    ...map,
+    [id]: {
+      id,
+      name,
+      createdAt: now,
+      updatedAt: now,
+      parentId,
+      x: pos.x,
+      y: pos.y,
+      tabs: rest.map((page, i) => toSavedTab(page, gridPosition(groups.length + i))),
+    },
+  };
+  groups.forEach((group, i) => {
+    const subId = crypto.randomUUID();
+    const subPos = gridPosition(i);
+    next[subId] = {
+      id: subId,
+      name: group.host,
+      createdAt: now,
+      updatedAt: now,
+      parentId: id,
+      x: subPos.x,
+      y: subPos.y,
+      tabs: group.pages.map((page, j) => toSavedTab(page, gridPosition(j))),
+    };
+  });
+  return { map: next, subfolders: groups.length };
 }

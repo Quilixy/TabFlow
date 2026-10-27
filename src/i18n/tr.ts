@@ -333,6 +333,9 @@ export const tr = {
   // Yan panel modu
   'popup.backToPopup': 'Açılır pencereye dön',
   'popup.backToPopupHint': 'Araç çubuğu simgesi yeniden açılır pencereyi açar.',
+  // Siteye göre gruplama
+  'composer.groupByDomain': 'Siteye göre alt klasörlere ayır',
+  'saveAll.grouped': '{n} siteye göre alt klasörlere ayrıldı.',
 } satisfies Record<string, MessageEntry>;
 
 export type Messages = { [K in keyof typeof tr]: MessageEntry };

@@ -11,7 +11,7 @@ interface FolderComposerProps {
   disabled: boolean;
   /** Yeni klasörün oluşturulacağı üst klasörün adı (kökse null). */
   parentName?: string | null;
-  onSubmit: (name: string, includePinned: boolean) => Promise<boolean>;
+  onSubmit: (name: string, includePinned: boolean, groupByDomain: boolean) => Promise<boolean>;
   onClose: () => void;
 }
 
@@ -20,6 +20,8 @@ export function FolderComposer({ mode, isBusy, disabled, parentName = null, onSu
   const setDraftName = useUiStore((s) => s.setDraftName);
   const includePinned = useUiStore((s) => s.includePinned);
   const setIncludePinned = useUiStore((s) => s.setIncludePinned);
+  const groupByDomain = useUiStore((s) => s.groupByDomain);
+  const setGroupByDomain = useUiStore((s) => s.setGroupByDomain);
 
   const isSaveAll = mode === 'saveAll';
   const isSaveActive = mode === 'saveActive';
@@ -28,7 +30,7 @@ export function FolderComposer({ mode, isBusy, disabled, parentName = null, onSu
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canSubmit) return;
-    const ok = await onSubmit(draftName, includePinned);
+    const ok = await onSubmit(draftName, includePinned, groupByDomain);
     if (ok) {
       setDraftName('');
       onClose();
@@ -86,6 +88,18 @@ export function FolderComposer({ mode, isBusy, disabled, parentName = null, onSu
             className="size-4 accent-indigo-600"
           />
           {t('composer.includePinned')}
+        </label>
+      )}
+      {isSaveAll && (
+        <label className="flex items-center gap-2 text-xs text-gray-700">
+          <input
+            type="checkbox"
+            checked={groupByDomain}
+            disabled={disabled}
+            onChange={(e) => setGroupByDomain(e.target.checked)}
+            className="size-4 accent-indigo-600"
+          />
+          {t('composer.groupByDomain')}
         </label>
       )}
       <div className="flex justify-end gap-2 mt-2">

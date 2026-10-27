@@ -259,11 +259,11 @@ export default function PopupApp({ layout = 'popup' }: PopupAppProps) {
   );
 
   const handleComposerSubmit = useCallback(
-    (name: string, includePinned: boolean) => {
+    (name: string, includePinned: boolean, groupByDomain: boolean) => {
       if (composer === 'saveAll') {
         return run(SAVE_ACTION, async () => {
-          const { folder, skipped, closeFailed } = await saveAndClose(name, includePinned, null);
-          showToast(formatSaveAllMessage(folder.tabs.length, folder.name, skipped, closeFailed));
+          const { folder, saved, subfolders, skipped, closeFailed } = await saveAndClose(name, includePinned, null, groupByDomain);
+          showToast(formatSaveAllMessage(saved, folder.name, skipped, closeFailed, subfolders));
         });
       }
       if (composer === 'saveActive') {
