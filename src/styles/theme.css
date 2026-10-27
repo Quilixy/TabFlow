@@ -1,0 +1,456 @@
+/*
+ * TabFlow teması.
+ * Tailwind renkleri CSS değişkenleri olarak okunur (var(--color-...)); bu dosya, değişkenleri
+ * <html data-theme / data-accent> özniteliklerine göre yeniden eşleyerek koyu tema ve vurgu
+ * renklerini tek yerden sağlar. Bileşenlerde ayrı "dark:" sınıfı gerekmez.
+ * Öznitelikleri src/utils/theme.ts yazar (applyTheme).
+ */
+
+@import './card-decor.css';
+
+/* ---- Vurgu renkleri (--ac-*): varsayılan indigo ---- */
+:root {
+  --ac-50: #eef2ff;
+  --ac-100: #e0e7ff;
+  --ac-200: #c7d2fe;
+  --ac-300: #a5b4fc;
+  --ac-400: #818cf8;
+  --ac-500: #6366f1;
+  --ac-600: #4f46e5;
+  --ac-700: #4338ca;
+  --ac-800: #3730a3;
+  --ac-900: #312e81;
+}
+
+html[data-accent='emerald'] {
+  --ac-50: #ecfdf5;
+  --ac-100: #d1fae5;
+  --ac-200: #a7f3d0;
+  --ac-300: #6ee7b7;
+  --ac-400: #34d399;
+  --ac-500: #10b981;
+  --ac-600: #059669;
+  --ac-700: #047857;
+  --ac-800: #065f46;
+  --ac-900: #064e3b;
+}
+
+html[data-accent='rose'] {
+  --ac-50: #fff1f2;
+  --ac-100: #ffe4e6;
+  --ac-200: #fecdd3;
+  --ac-300: #fda4af;
+  --ac-400: #fb7185;
+  --ac-500: #f43f5e;
+  --ac-600: #e11d48;
+  --ac-700: #be123c;
+  --ac-800: #9f1239;
+  --ac-900: #881337;
+}
+
+html[data-accent='sky'] {
+  --ac-50: #f0f9ff;
+  --ac-100: #e0f2fe;
+  --ac-200: #bae6fd;
+  --ac-300: #7dd3fc;
+  --ac-400: #38bdf8;
+  --ac-500: #0ea5e9;
+  --ac-600: #0284c7;
+  --ac-700: #0369a1;
+  --ac-800: #075985;
+  --ac-900: #0c4a6e;
+}
+
+html[data-accent='violet'] {
+  --ac-50: #f5f3ff;
+  --ac-100: #ede9fe;
+  --ac-200: #ddd6fe;
+  --ac-300: #c4b5fd;
+  --ac-400: #a78bfa;
+  --ac-500: #8b5cf6;
+  --ac-600: #7c3aed;
+  --ac-700: #6d28d9;
+  --ac-800: #5b21b6;
+  --ac-900: #4c1d95;
+}
+
+html[data-accent='amber'] {
+  --ac-50: #fffbeb;
+  --ac-100: #fef3c7;
+  --ac-200: #fde68a;
+  --ac-300: #fcd34d;
+  --ac-400: #fbbf24;
+  --ac-500: #f59e0b;
+  --ac-600: #d97706;
+  --ac-700: #b45309;
+  --ac-800: #92400e;
+  --ac-900: #78350f;
+}
+
+/* "indigo-*" yardımcı sınıfları vurgu rengine bağlanır */
+:root {
+  color-scheme: light;
+  --color-indigo-50: var(--ac-50);
+  --color-indigo-100: var(--ac-100);
+  --color-indigo-200: var(--ac-200);
+  --color-indigo-300: var(--ac-300);
+  --color-indigo-400: var(--ac-400);
+  --color-indigo-500: var(--ac-500);
+  --color-indigo-600: var(--ac-600);
+  --color-indigo-700: var(--ac-700);
+  --color-indigo-800: var(--ac-800);
+  --color-indigo-900: var(--ac-900);
+  --tf-grid-dot: #d1d5db;
+  /* Kart/menü kenarı: açık yüzeyde hafif koyu, koyu yüzeyde hafif açık */
+  --tf-card-border: rgb(0 0 0 / 0.05);
+}
+
+/* ---- Koyu tema ---- */
+html[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Yüzeyler ve gri ölçek (ters çevrilmiş) */
+  --color-white: #1c1e26;
+  --color-gray-50: #15161c;
+  --color-gray-100: #272a34;
+  --color-gray-200: #343846;
+  --color-gray-300: #4a4f60;
+  --color-gray-400: #7c8296;
+  --color-gray-500: #9aa0b4;
+  --color-gray-600: #b4b9ca;
+  --color-gray-700: #cfd3e0;
+  --color-gray-800: #e3e6ef;
+  --color-gray-900: #f3f4f8;
+  --color-gray-950: #fafbfd;
+
+  /* Vurgu tonları: açık tonlar koyu yüzeye karıştırılır, metin tonları açılır */
+  --color-indigo-50: color-mix(in srgb, var(--ac-500) 14%, #15161c);
+  --color-indigo-100: color-mix(in srgb, var(--ac-500) 24%, #15161c);
+  --color-indigo-200: color-mix(in srgb, var(--ac-500) 40%, #15161c);
+  --color-indigo-300: var(--ac-400);
+  --color-indigo-700: var(--ac-300);
+  --color-indigo-800: var(--ac-200);
+
+  /* Hata renkleri */
+  --color-red-50: #3b1c22;
+  --color-red-100: #4c232b;
+  --color-red-200: #6e2f39;
+  --color-red-600: #f87171;
+  --color-red-800: #fca5a5;
+
+  /* Başarı renkleri ("eklendi" vurgusu) */
+  --color-emerald-50: color-mix(in srgb, #10b981 18%, #15161c);
+  --color-emerald-600: #34d399;
+
+  --tf-grid-dot: #2f3340;
+  --tf-card-border: rgb(255 255 255 / 0.08);
+}
+
+/* =====================================================================
+ * Tema paketleri (data-pack): kendi renkleri ve süsleri vardır. Her paket hem AÇIK hem KOYU çalışır;
+ * ton, Görünüm menüsündeki Açık/Koyu/Sistem seçiminden gelir (data-theme). Vurgu rengini paket belirler.
+ * Özgüllükleri ([data-pack][data-theme]) genel koyu tema bloğundan yüksek olduğundan onu geçersiz kılar.
+ * Süsler yalnızca data-decor='on' iken görünür (Görünüm > Dekoratif efektler).
+ * Metin renkleri (gray-400…900) her yüzeyde en az 4.5:1 kontrast verecek şekilde seçildi.
+ * ===================================================================== */
+
+/* ---- Paket vurgu renkleri (tondan bağımsız) ---- */
+html[data-pack='sakura'] {
+  --ac-50: #fff0f5; --ac-100: #ffe0ea; --ac-200: #ffc2d6; --ac-300: #ff9dbd; --ac-400: #f472a0;
+  --ac-500: #e8558a; --ac-600: #cf3470; --ac-700: #b02a5c; --ac-800: #8f2349; --ac-900: #6e1c3a;
+}
+html[data-pack='space'] {
+  --ac-50: #f5f3ff; --ac-100: #ede9fe; --ac-200: #ddd6fe; --ac-300: #c4b5fd; --ac-400: #a78bfa;
+  --ac-500: #8b5cf6; --ac-600: #7c3aed; --ac-700: #6d28d9; --ac-800: #5b21b6; --ac-900: #4c1d95;
+}
+
+/* ---- Sakura · açık ---- */
+html[data-pack='sakura'][data-theme='light'] {
+  --color-white: #fffafc;
+  --color-gray-50: #fff3f7;
+  --color-gray-100: #fde7ef;
+  --color-gray-200: #f8d3e1;
+  --color-gray-300: #eab6cb;
+  --color-gray-400: #8a5a72;
+  --color-gray-500: #774863;
+  --color-gray-600: #66394f;
+  --color-gray-700: #552d43;
+  --color-gray-800: #442238;
+  --color-gray-900: #33172c;
+  --tf-grid-dot: #f0c4d4;
+}
+html[data-pack='sakura'][data-theme='light'] body {
+  background: linear-gradient(160deg, #fff7fa 0%, #ffeef4 55%, #fff6f9 100%) fixed;
+}
+
+/* ---- Sakura · koyu (gece sakurası) ---- */
+html[data-pack='sakura'][data-theme='dark'] {
+  --color-white: #231520;
+  --color-gray-50: #170d15;
+  --color-gray-100: #331d2e;
+  --color-gray-200: #46293f;
+  --color-gray-300: #68425d;
+  --color-gray-400: #c490ab;
+  --color-gray-500: #d6aac1;
+  --color-gray-600: #e4c3d3;
+  --color-gray-700: #efd8e3;
+  --color-gray-800: #f7e8ef;
+  --color-gray-900: #fff5f9;
+  --color-indigo-50: color-mix(in srgb, var(--ac-500) 14%, #170d15);
+  --color-indigo-100: color-mix(in srgb, var(--ac-500) 24%, #170d15);
+  --color-indigo-200: color-mix(in srgb, var(--ac-500) 40%, #170d15);
+  --tf-grid-dot: #4a2a40;
+}
+html[data-pack='sakura'][data-theme='dark'] body {
+  background: linear-gradient(160deg, #1f1019 0%, #170d15 55%, #120a11 100%) fixed;
+}
+/* Gece: yapraklar ve dal hafif parlar */
+html[data-pack='sakura'][data-theme='dark'] :is(.tf-petal, .tf-burst-petal) {
+  filter: drop-shadow(0 0 5px rgb(255 160 205 / 0.55));
+}
+html[data-pack='sakura'][data-theme='dark'][data-decor='on'] [data-item-id][data-drop-folder]::after {
+  filter: brightness(1.25) drop-shadow(0 0 4px rgb(255 160 205 / 0.35));
+}
+
+/* ---- Uzay · koyu ---- */
+html[data-pack='space'][data-theme='dark'] {
+  --color-white: #12142e;
+  --color-gray-50: #0b0d20;
+  --color-gray-100: #1c1f45;
+  --color-gray-200: #2b2f60;
+  --color-gray-300: #444a8f;
+  --color-gray-400: #9aa0e0;
+  --color-gray-500: #a6abdf;
+  --color-gray-600: #bdc1ec;
+  --color-gray-700: #d2d5f4;
+  --color-gray-800: #e4e6fa;
+  --color-gray-900: #f3f4ff;
+  --tf-grid-dot: #2b2f60;
+  --tf-star-color: #fff;
+  --tf-star-glow: rgb(200 210 255 / 0.8);
+}
+html[data-pack='space'][data-theme='dark'] body { background: #0b0d20; }
+/* Süsler açıkken yüzeyler yarı saydam "cam" olur, arkadaki yıldızlar görünür */
+html[data-pack='space'][data-theme='dark'][data-decor='on'] {
+  --color-white: rgb(18 20 46 / 0.8);
+  --color-gray-50: rgb(8 10 28 / 0.5);
+}
+html[data-pack='space'][data-theme='dark'][data-decor='on'] body {
+  background:
+    radial-gradient(1px 1px at 20px 30px, #fff, transparent), radial-gradient(1px 1px at 90px 140px, #fff, transparent), radial-gradient(1.5px 1.5px at 160px 60px, #fff, transparent), radial-gradient(1px 1px at 210px 190px, #fff, transparent), radial-gradient(1.5px 1.5px at 270px 110px, #fff, transparent), radial-gradient(1px 1px at 330px 250px, #fff, transparent), radial-gradient(1px 1px at 60px 250px, #fff, transparent), radial-gradient(1px 1px at 300px 20px, #fff, transparent),
+    radial-gradient(ellipse at 12% 18%, rgb(124 58 237 / 0.38), transparent 55%),
+    radial-gradient(ellipse at 88% 78%, rgb(14 165 233 / 0.26), transparent 50%),
+    radial-gradient(ellipse at 60% 40%, rgb(236 72 153 / 0.12), transparent 60%),
+    #070816;
+  background-size: 360px 300px, 360px 300px, 360px 300px, 360px 300px, 360px 300px, 360px 300px, 360px 300px, 360px 300px, auto, auto, auto, auto;
+  background-attachment: fixed;
+}
+html[data-pack='space'][data-theme='dark'][data-decor='on'] :is([role='menu'], [role='dialog'], [role='alertdialog']) {
+  background-color: rgb(18 20 46 / 0.94);
+}
+
+/* ---- Uzay · açık (yörünge) ---- */
+html[data-pack='space'][data-theme='light'] {
+  --color-white: #ffffff;
+  --color-gray-50: #f2f3ff;
+  --color-gray-100: #e7e9fb;
+  --color-gray-200: #d5d9f5;
+  --color-gray-300: #b7bdea;
+  --color-gray-400: #5a62a3;
+  --color-gray-500: #4b5392;
+  --color-gray-600: #3d4480;
+  --color-gray-700: #30366a;
+  --color-gray-800: #232754;
+  --color-gray-900: #171a3f;
+  --tf-grid-dot: #c7ccf0;
+  --tf-star-color: #6366f1;
+  --tf-star-glow: rgb(99 102 241 / 0.5);
+}
+html[data-pack='space'][data-theme='light'] body { background: #f2f3ff; }
+html[data-pack='space'][data-theme='light'][data-decor='on'] {
+  --color-white: rgb(255 255 255 / 0.78);
+  --color-gray-50: rgb(238 240 255 / 0.55);
+}
+html[data-pack='space'][data-theme='light'][data-decor='on'] body {
+  background:
+    radial-gradient(1px 1px at 20px 30px, rgb(99 102 241 / 0.55), transparent), radial-gradient(1px 1px at 90px 140px, rgb(99 102 241 / 0.55), transparent), radial-gradient(1.5px 1.5px at 160px 60px, rgb(99 102 241 / 0.55), transparent), radial-gradient(1px 1px at 210px 190px, rgb(99 102 241 / 0.55), transparent), radial-gradient(1.5px 1.5px at 270px 110px, rgb(99 102 241 / 0.55), transparent), radial-gradient(1px 1px at 330px 250px, rgb(99 102 241 / 0.55), transparent), radial-gradient(1px 1px at 60px 250px, rgb(99 102 241 / 0.55), transparent), radial-gradient(1px 1px at 300px 20px, rgb(99 102 241 / 0.55), transparent),
+    radial-gradient(ellipse at 12% 18%, rgb(167 139 250 / 0.35), transparent 55%),
+    radial-gradient(ellipse at 88% 78%, rgb(125 211 252 / 0.38), transparent 50%),
+    radial-gradient(ellipse at 60% 40%, rgb(249 168 212 / 0.22), transparent 60%),
+    #f3f4ff;
+  background-size: 360px 300px, 360px 300px, 360px 300px, 360px 300px, 360px 300px, 360px 300px, 360px 300px, 360px 300px, auto, auto, auto, auto;
+  background-attachment: fixed;
+}
+html[data-pack='space'][data-theme='light'][data-decor='on'] :is([role='menu'], [role='dialog'], [role='alertdialog']) {
+  background-color: rgb(255 255 255 / 0.96);
+}
+
+/* ---- Uzay (iki ton): içerik süs katmanının üstünde, ışıltılı kartlar, cam menüler ---- */
+html[data-pack='space'] #root { position: relative; z-index: 1; }
+/*
+ * Cam bulanıklığı yalnızca açılır katmanlara (menü, diyalog) verilir ve neredeyse opak tutulur (okunurluk).
+ * UYARI: backdrop-filter / transform / filter bir "yığın bağlamı" oluşturur. aside ve header gibi ana
+ * yerleşim kutularına verilirse, içlerindeki açılır menüler sonraki kardeşlerin (tuval) altına gömülür.
+ */
+html[data-pack='space'][data-decor='on'] :is([role='menu'], [role='dialog'], [role='alertdialog']) {
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+html[data-pack='space'][data-decor='on'] [data-item-id]:hover,
+html[data-pack='space'][data-decor='on'] [data-item-id]:focus-visible {
+  box-shadow: 0 0 0 1px var(--ac-400), 0 0 18px color-mix(in srgb, var(--ac-500) 55%, transparent);
+}
+
+/* ---- Süs katmanı (ThemeDecor, <body>'ye taşınır) ---- */
+.tf-decor { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
+html[data-pack='sakura'] .tf-decor { z-index: 6; }
+html[data-pack='space'] .tf-decor { z-index: 0; }
+
+/* Sakura: düşen yapraklar */
+.tf-petal {
+  position: absolute; top: 0; left: var(--x);
+  width: var(--s); height: calc(var(--s) * 1.3);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 20'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ffd1e1'/%3E%3Cstop offset='1' stop-color='%23f27aa5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M8 0C13.5 3.5 15.5 11.5 8 19.5C0.5 11.5 2.5 3.5 8 0Z' fill='url(%23g)'/%3E%3Cpath d='M8 3C8 8 8 13 8 17' stroke='%23f8a5c2' stroke-width='0.6' fill='none' opacity='0.7'/%3E%3C/svg%3E") center / contain no-repeat;
+  opacity: 0; will-change: transform, opacity;
+  animation: tf-petal-fall var(--dur) linear var(--delay) infinite;
+}
+@keyframes tf-petal-fall {
+  0% { transform: translate3d(0, -8vh, 0) rotate(0deg); opacity: 0; }
+  8% { opacity: var(--o); }
+  50% { transform: translate3d(calc(var(--drift) * 0.55), 50vh, 0) rotate(calc(var(--spin) * 0.5)); opacity: var(--o); }
+  92% { opacity: var(--o); }
+  100% { transform: translate3d(var(--drift), 108vh, 0) rotate(var(--spin)); opacity: 0; }
+}
+
+/* Sakura ve Uzay: klasör kartlarının köşe süsleri card-decor.css'te. */
+
+/* Sakura: klasör eklenince / sekme bırakılınca yaprak dağılması (PetalBurst) */
+.tf-burst { position: fixed; z-index: 60; width: 0; height: 0; pointer-events: none; }
+.tf-burst-petal {
+  position: absolute; left: 0; top: 0; width: var(--s); height: calc(var(--s) * 1.3);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 20'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ffd1e1'/%3E%3Cstop offset='1' stop-color='%23f27aa5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M8 0C13.5 3.5 15.5 11.5 8 19.5C0.5 11.5 2.5 3.5 8 0Z' fill='url(%23g)'/%3E%3Cpath d='M8 3C8 8 8 13 8 17' stroke='%23f8a5c2' stroke-width='0.6' fill='none' opacity='0.7'/%3E%3C/svg%3E") center / contain no-repeat;
+  animation: tf-burst 950ms cubic-bezier(0.2, 0.8, 0.3, 1) var(--delay) both;
+}
+@keyframes tf-burst {
+  0% { transform: translate(-50%, -50%) scale(0.3) rotate(0deg); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1) rotate(var(--rot)); opacity: 0; }
+}
+
+/* Uzay: parıldayan (bazıları renkli) yıldızlar */
+.tf-star {
+  position: absolute; left: var(--x); top: var(--y); width: var(--s); height: var(--s);
+  border-radius: 50%; background: var(--tf-star-color, #fff); box-shadow: 0 0 6px 1px var(--tf-star-glow, rgb(200 210 255 / 0.8));
+  animation: tf-twinkle var(--dur) ease-in-out var(--delay) infinite;
+}
+.tf-star[data-tint='1'] { background: #7dd3fc; box-shadow: 0 0 7px 1px rgb(125 211 252 / 0.8); }
+.tf-star[data-tint='2'] { background: #c4b5fd; box-shadow: 0 0 7px 1px rgb(196 181 253 / 0.8); }
+.tf-star[data-tint='3'] { background: #f9a8d4; box-shadow: 0 0 7px 1px rgb(249 168 212 / 0.8); }
+@keyframes tf-twinkle { 0%, 100% { opacity: 0.15; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.25); } }
+
+/* Uzay: farklı yerlerden geçen kayan yıldızlar */
+.tf-shooting {
+  position: absolute; top: var(--top); left: var(--left); width: var(--len); height: 2px; opacity: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--tf-star-color, #fff));
+  transform: rotate(var(--angle)); transform-origin: 100% 50%;
+  animation: tf-shoot var(--dur) ease-in var(--delay) infinite;
+}
+@keyframes tf-shoot {
+  0% { opacity: 0; transform: rotate(var(--angle)) translateX(0); }
+  3% { opacity: 1; }
+  10% { opacity: 0; transform: rotate(var(--angle)) translateX(-460px); }
+  100% { opacity: 0; transform: rotate(var(--angle)) translateX(-460px); }
+}
+
+/* Uzay: ekranı yavaşça boydan boya geçen kuyruklu yıldız (yaklaşık 50 saniyede bir) */
+.tf-comet {
+  position: absolute; top: 18%; left: 0; width: 180px; height: 3px; opacity: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgb(125 211 252 / 0.5) 60%, #e0f2fe);
+  box-shadow: 0 0 10px 1px rgb(125 211 252 / 0.45);
+  animation: tf-comet 50s linear 12s infinite;
+}
+.tf-comet::after {
+  content: ''; position: absolute; right: -3px; top: 50%; width: 7px; height: 7px; translate: 0 -50%;
+  border-radius: 50%; background: #f0f9ff; box-shadow: 0 0 12px 4px rgb(186 230 253 / 0.9);
+}
+@keyframes tf-comet {
+  0% { opacity: 0; transform: translate(-220px, 0) rotate(14deg); }
+  2% { opacity: 0.95; }
+  16% { opacity: 0.95; }
+  18% { opacity: 0; transform: translate(calc(100vw + 40px), 26vh) rotate(14deg); }
+  100% { opacity: 0; transform: translate(calc(100vw + 40px), 26vh) rotate(14deg); }
+}
+
+/* Uzay: sol altta yüzen halkalı gezegen ve çevresinde dönen uydu; sağ üstte ay */
+.tf-planet-wrap {
+  position: absolute; left: max(1rem, 3vw); bottom: max(1rem, 4vh); width: 240px; height: 240px;
+  animation: tf-planet-float 38s ease-in-out infinite;
+}
+.tf-planet, .tf-moon, .tf-satellite { position: absolute; background-position: center; background-size: contain; background-repeat: no-repeat; }
+.tf-planet { inset: 0; }
+.tf-satellite {
+  left: 0; top: 0; width: 34px; height: 17px;
+  /* Gezegenin çevresinde eğik elips yörünge */
+  offset-path: path('M 4 150 A 116 34 -20 1 1 236 90 A 116 34 -20 1 1 4 150');
+  offset-rotate: 0deg;
+  animation: tf-orbit 46s linear infinite;
+}
+.tf-moon {
+  right: max(1.5rem, 6vw); top: max(4rem, 11vh); width: 96px; height: 96px;
+  animation: tf-moon-float 30s ease-in-out -8s infinite;
+}
+@keyframes tf-planet-float {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(14px, -18px) rotate(4deg); }
+}
+@keyframes tf-moon-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(12px); } }
+@keyframes tf-orbit { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+
+/* Koyu tonda belirgin, açık tonda soluk: içerik her zaman önde ve okunur kalır */
+html[data-pack='space'][data-theme='dark'] .tf-planet-wrap { opacity: 0.6; }
+html[data-pack='space'][data-theme='dark'] .tf-moon { opacity: 0.75; }
+html[data-pack='space'][data-theme='light'] .tf-planet-wrap { opacity: 0.38; }
+html[data-pack='space'][data-theme='light'] .tf-moon { opacity: 0.5; }
+html[data-pack='space'][data-theme='light'] .tf-comet { background: linear-gradient(90deg, transparent, rgb(99 102 241 / 0.5) 60%, #6366f1); box-shadow: none; }
+html[data-pack='space'][data-theme='light'] .tf-comet::after { background: #6366f1; box-shadow: 0 0 10px 3px rgb(99 102 241 / 0.5); }
+
+/* Hareketi azalt: hareketli süsler kapanır (Uzay'ın statik yıldızlı arka planı kalır) */
+@media (prefers-reduced-motion: reduce) {
+  .tf-petal, .tf-star, .tf-shooting, .tf-comet, .tf-satellite, .tf-burst { display: none; }
+  .tf-planet-wrap, .tf-moon { animation: none; }
+}
+
+/* ---- Animasyonlar (data-anim: none | pop | fade | slide) ---- */
+@keyframes tf-pop-in { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
+@keyframes tf-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tf-slide-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes tf-pop-out { to { opacity: 0; transform: scale(0.85); } }
+@keyframes tf-fade-out { to { opacity: 0; } }
+@keyframes tf-slide-out { to { opacity: 0; transform: translateX(-14px); } }
+
+html[data-anim='pop'] .tf-enter { animation: tf-pop-in 240ms cubic-bezier(0.2, 1.2, 0.4, 1) both; }
+html[data-anim='fade'] .tf-enter { animation: tf-fade-in 220ms ease-out both; }
+html[data-anim='slide'] .tf-enter { animation: tf-slide-in 240ms ease-out both; }
+html[data-anim='pop'] .tf-leave { animation: tf-pop-out 180ms ease-in forwards; }
+html[data-anim='fade'] .tf-leave { animation: tf-fade-out 180ms ease-in forwards; }
+html[data-anim='slide'] .tf-leave { animation: tf-slide-out 180ms ease-in forwards; }
+
+/* ---- Başarı geri bildirimi (popup: sekme klasöre eklendi) ---- */
+@keyframes tf-check-pop {
+  0% { transform: scale(0.3); opacity: 0; }
+  55% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes tf-row-flash {
+  0% { box-shadow: 0 0 0 0 rgb(16 185 129 / 0.55); }
+  100% { box-shadow: 0 0 0 10px rgb(16 185 129 / 0); }
+}
+.tf-added { animation: tf-row-flash 700ms ease-out; border-color: #10b981 !important; }
+.tf-check-pop { animation: tf-check-pop 380ms ease-out both; color: #10b981; }
+
+/* Hareketi azalt: animasyonlar kapanır, durum yine görünür kalır */
+@media (prefers-reduced-motion: reduce) {
+  .tf-enter, .tf-leave, .tf-added, .tf-check-pop { animation: none !important; }
+}

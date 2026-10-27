@@ -1,0 +1,18 @@
+@import "tailwindcss";
+@import "../styles/theme.css";
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  font-family: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background-color: var(--color-gray-50, #fafafa);
+  color: var(--color-gray-900, #111827);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
