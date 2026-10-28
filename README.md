@@ -2,11 +2,21 @@
 
 Sekmelerini klasörlere ve serbest bir tuvale kaydet, kapat ve saniyeler içinde geri yükle. Chrome (Manifest V3) eklentisi.
 
+![Sakura teması: solda klasör ağacı, ortada klasörün tuvali, sağda açık sekmeler](docs/screenshots/app-sakura-light.png)
+
+| Uzay (koyu) | Varsayılan (açık) |
+| --- | --- |
+| ![Uzay teması, koyu](docs/screenshots/app-space-dark.png) | ![Varsayılan tema, açık](docs/screenshots/app-default-light.png) |
+
+| Popup (Sakura) | Popup (varsayılan) |
+| --- | --- |
+| ![Popup, Sakura teması](docs/screenshots/popup-sakura-light.png) | ![Popup, varsayılan tema](docs/screenshots/popup-default-light.png) |
+
 ## Özellikler
 
 - **Popup:** açık sekmelerin tümünü ya da yalnızca aktif sayfayı tek tıkla bir klasöre kaydet; klasörleri ara, iç içe klasörleri aç, sekmeleri tek tek ya da alt klasörleriyle birlikte geri aç.
 - **Tam ekran uygulama** (`Alt+Shift+T` ya da popup'taki "Tam ekranda aç"): solda klasör ağacı, ortada her klasörün kendi tuvali (sürükle-bırak, yakınlaştır, ızgaraya diz), sağda açık sekmeler.
-- İç içe klasörler, klasör rengi ve 35 simge, tema paketleri: Sakura (kiraz ağacı, düşen yapraklar) ve Uzay (gezegen, galaksi, kayan yıldızlar), her biri açık/koyu; varsayılan temada vurgu rengi.
+- İç içe klasörler, klasör rengi ve 35 simge, tema paketleri: Sakura (rüzgârda salınan kiraz ağacı, düşen yapraklar) ve Uzay (dönen galaksi, Avcı takımyıldızı, geçen uydu, kayan yıldızlar), her biri açık/koyu; varsayılan temada vurgu rengi.
 - **Siteye göre gruplama:** *Tümünü kaydet* sırasında “Siteye göre alt klasörlere ayır” seçilirse aynı siteden en az iki sekme o sitenin adıyla bir alt klasöre gider.
 - **Açma seçenekleri:** klasörü bu pencerede, alt klasörleriyle birlikte, klasörün adı ve renginde bir **sekme grubu** olarak ya da **yeni pencerede** aç.
 - **Sıralama ve sabitleme:** ağaçta bir klasörü başka bir satırın üst/alt kenarına sürükleyerek sırala (`Alt+↑/↓` da olur); "Üste sabitle" ile sık kullanılanları en üstte tut.
@@ -66,6 +76,7 @@ Uçtan uca testler şunları da kapsar:
 | `npm run typecheck` | TypeScript tip kontrolü |
 | `npm run lint` | ESLint |
 | `npm run decor` | Tema süslerini yeniden üretir (Python 3.10+; ayrıntı aşağıda) |
+| `npm run screenshots` | README ekran görüntülerini yeniden üretir (`docs/screenshots/`) |
 
 ## İzinler
 
@@ -148,3 +159,8 @@ yalnızca `transform`/`opacity` ile canlandırılır.
 Arayüz metinleri `src/i18n/tr.ts` (kaynak) ve `src/i18n/en.ts` dosyalarındadır. Yeni bir metin eklerken iki dosyaya
 da aynı anahtarı ekle; İngilizce sözlükte eksik anahtar derleme hatası verir. Çoğul gereken İngilizce metinler
 `plural()` kullanan küçük fonksiyonlardır. Manifest metinleri `public/_locales/<dil>/messages.json` içindedir.
+
+## Lisans
+
+[MIT](LICENSE). Pakete gömülen Inter yazı tipi [SIL Open Font License 1.1](https://openfontlicense.org) ile dağıtılır
+(`@fontsource-variable/inter`).
