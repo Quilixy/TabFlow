@@ -88,7 +88,8 @@ The end-to-end tests also cover:
 | `npm run typecheck` | TypeScript type check |
 | `npm run lint` | ESLint |
 | `npm run decor` | Regenerate the theme decorations (Python 3.10+; see below) |
-| `npm run screenshots` | Regenerate the README screenshots (`docs/screenshots/en`, `docs/screenshots/tr`) |
+| `npm run screenshots` | Regenerate the README screenshots and the Chrome Web Store images (`docs/screenshots/`, `docs/store/`) |
+| `npm run package` | Build and zip `dist/` for the Chrome Web Store (`release/tabflow-<version>.zip`) |
 
 ## Permissions
 
@@ -103,7 +104,7 @@ The end-to-end tests also cover:
 | `sidePanel` | Show the interface in the browser's side panel |
 | `bookmarks` (optional) | Requested only when importing from bookmarks |
 
-All data stays in this browser (`chrome.storage.local`) and is never sent to any server.
+All data stays in this browser (`chrome.storage.local`) and is never sent to any server. See the [privacy policy](PRIVACY.md).
 
 ## Backup file
 
@@ -148,7 +149,7 @@ src/
   styles/       theme variables; card-decor.css and canvas-scene.css are generated
   assets/       theme images (Sakura branches, Space galaxy, Orion)
 scripts/decor/  Python scripts that generate the theme decorations
-docs/           README screenshots
+docs/           README screenshots; store/ holds the Chrome Web Store images and listing text
 ```
 
 ### Theme decorations

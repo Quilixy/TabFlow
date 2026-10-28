@@ -4,7 +4,7 @@ import { defineConfig } from '@playwright/test';
 // Önce `npm run build` gerekir (`npm run test:e2e` ikisini birlikte yapar).
 export default defineConfig({
   testDir: './e2e',
-  testIgnore: 'screenshots.spec.ts', // README görüntüleri: playwright.screenshots.config.ts
+  testIgnore: ['screenshots.spec.ts', 'store.spec.ts'], // README ve mağaza görselleri: playwright.screenshots.config.ts
   timeout: 30_000,
   expect: { timeout: 5_000 },
   fullyParallel: false,

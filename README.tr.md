@@ -78,7 +78,8 @@ Uçtan uca testler şunları da kapsar:
 | `npm run typecheck` | TypeScript tip kontrolü |
 | `npm run lint` | ESLint |
 | `npm run decor` | Tema süslerini yeniden üretir (Python 3.10+; ayrıntı aşağıda) |
-| `npm run screenshots` | README ekran görüntülerini yeniden üretir (`docs/screenshots/tr/`) |
+| `npm run screenshots` | README ekran görüntülerini ve Chrome Web Store görsellerini yeniden üretir (`docs/screenshots/`, `docs/store/`) |
+| `npm run package` | Derleyip `dist/`'i Chrome Web Store için zip'ler (`release/tabflow-<sürüm>.zip`) |
 
 ## İzinler
 
@@ -93,7 +94,7 @@ Uçtan uca testler şunları da kapsar:
 | `sidePanel` | Arayüzü tarayıcının yan panelinde açmak |
 | `bookmarks` (isteğe bağlı) | Yer imlerinden içe aktarırken, yalnızca o an istenir |
 
-Veriler yalnızca bu tarayıcıda (`chrome.storage.local`) tutulur; hiçbir sunucuya gönderilmez.
+Veriler yalnızca bu tarayıcıda (`chrome.storage.local`) tutulur; hiçbir sunucuya gönderilmez. Ayrıntılar: [gizlilik politikası](PRIVACY.md#türkçe).
 
 ## Yedek dosyası
 
@@ -138,7 +139,7 @@ src/
   styles/       tema değişkenleri; card-decor.css ve canvas-scene.css üretilmiş dosyalardır
   assets/       tema görselleri (Sakura dalı, Uzay galaksisi, Avcı)
 scripts/decor/  tema süslerini üreten Python betikleri
-docs/           README ekran görüntüleri
+docs/           README ekran görüntüleri; store/ altında Chrome Web Store görselleri ve mağaza metinleri
 ```
 
 ### Tema süsleri
