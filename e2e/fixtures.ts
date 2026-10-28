@@ -95,6 +95,7 @@ export interface Look {
   accent?: string;
   decor?: boolean;
   animation?: 'none' | 'pop' | 'fade' | 'slide';
+  language?: 'auto' | 'tr' | 'en';
 }
 
 /** Görünüm ayarlarını (arayüz deposu, localStorage) yazar ve sayfayı yeniden yükler. */
