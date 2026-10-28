@@ -8,6 +8,7 @@ Hareketli her şey yalnızca transform/opacity ile canlanır (GPU'da); SVG'lerin
 import math
 import random
 
+import orion
 from common import uri
 
 def galaxy_face(core, arm, star, seed=5):
@@ -70,41 +71,13 @@ def galaxy_assets() -> dict[str, str]:
     }
 
 
-# Avcı (Orion) takımyıldızı: gökyüzündeki konumlar (derece; x doğuya/sola, y kuzeye/yukarı ters), kadir ve renk.
-ORION = [
-    ('Meissa', -0.15, -9.93, 3.4, None),
-    ('Betelgeuse', -5.1, -7.4, 0.5, 'red'),
-    ('Bellatrix', 2.4, -6.35, 1.6, None),
-    ('Mintaka', 0.75, 0.3, 2.2, None),
-    ('Alnilam', -0.3, 1.2, 1.7, None),
-    ('Alnitak', -1.5, 1.94, 1.8, None),
-    ('Hatysa', -0.4, 5.9, 2.8, None),
-    ('Saiph', -3.3, 9.67, 2.1, None),
-    ('Rigel', 5.1, 8.2, 0.1, 'blue'),
-]
-ORION_LINKS = [('Meissa', 'Betelgeuse'), ('Meissa', 'Bellatrix'), ('Betelgeuse', 'Alnitak'), ('Bellatrix', 'Mintaka'),
-               ('Mintaka', 'Alnilam'), ('Alnilam', 'Alnitak'), ('Alnitak', 'Saiph'), ('Mintaka', 'Rigel')]
-_pos = {n: (x, y) for n, x, y, _m, _k in ORION}
-
-
-def orion_lines(color):
-    d = ''.join(f'M{_pos[a][0]} {_pos[a][1]}L{_pos[b][0]} {_pos[b][1]}' for a, b in ORION_LINKS)
-    return uri(
-        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='-7 -12 14 24'>"
-        f"<path d='{d}' stroke='{color}' stroke-width='.09' stroke-dasharray='.35 .3' stroke-linecap='round' fill='none'/></svg>"
-    )
-
-
-STAR_TINT = {  # (koyu renk, koyu ışıma, açık renk, açık ışıma)
-    'red': ('#ffb38a', 'rgb(255 150 100 / 0.85)', '#ea580c', 'rgb(234 88 12 / 0.45)'),
-    'blue': ('#dbeafe', 'rgb(147 197 253 / 0.95)', '#2563eb', 'rgb(37 99 235 / 0.45)'),
-}
+# Avcı (Orion) takımyıldızı: kaynak SVG'den (orion.py) çizgi arka planı ve yıldız görselleri
+ORION_LINES, ORION_STARS, ORION_RATIO = orion.build()
 ORION_RULES = '\n'.join(
-    f".tf-canvas-orion i:nth-child({n}) {{ left: {(x + 7) / 14 * 100:.1f}%; top: {(y + 12) / 24 * 100:.1f}%; "
-    f"--d: {2 + (3.5 - m) * 0.9:.1f}px; --t: {2.4 + (n * 0.83) % 2.4:.1f}s; --dl: {-n * 0.53:.2f}s;"
-    + (f" --c: {STAR_TINT[k][0]}; --g: {STAR_TINT[k][1]}; --cl: {STAR_TINT[k][2]}; --gl: {STAR_TINT[k][3]};" if k else '')
-    + ' }'
-    for n, (_name, x, y, m, k) in enumerate(ORION, 1)
+    # Yıldızın sol üst köşesi; boyut genişliğin yüzdesi, yükseklik oranla çevrilir (öğeler kare)
+    f".tf-canvas-orion i:nth-child({n}) {{ left: {x - w / 2:.2f}%; top: {y - w * ORION_RATIO / 2:.2f}%; width: {w:.2f}%; "
+    f"--t: {2.4 + (n * 0.83) % 2.4:.1f}s; --dl: {-n * 0.53:.2f}s; background-image: {img}; }}"
+    for n, (x, y, w, img) in enumerate(ORION_STARS, 1)
 )
 
 # Düşen yaprak: SVG'deki "tumbling-petal-a" biçimi; açık pembe zeminde seçilsin diye daha koyu tonlarla
@@ -202,30 +175,26 @@ html[data-pack='sakura'][data-theme='dark'][data-decor='on'] .tf-scene-petals {{
 @media (prefers-reduced-motion: reduce) {{
   .tf-scene-petals {{ display: none !important; }}
 }}
-/* Uzay: sağ altta (yakınlaştırma çubuğunun üstünde) küçük, parıldayan Avcı (Orion) takımyıldızı (Canvas'taki .tf-canvas-orion > i).
-   Çizgiler durağan arka plan; yıldızlar ayrı öğeler, yalnızca opacity/transform ile parıldar (GPU'da). */
+/* Uzay: sağ altta (yakınlaştırma çubuğunun üstünde) parıldayan Avcı (Orion) takımyıldızı (Canvas'taki
+   .tf-canvas-orion > i; kaynak: src/assets/orion-takimyildizi-astronomical.svg). Çizgiler durağan arka plan;
+   her yıldız ayrı öğe, yalnızca opacity/transform ile parıldar (GPU'da). Açık temada renkler tersine çevrilir:
+   beyaz yıldızlar koyu, renkler kendi tonunda kalır. */
 .tf-canvas-orion {{ display: none; }}
 html[data-pack='space'][data-decor='on'] .tf-canvas-orion {{
-  display: block; position: absolute; right: 44px; bottom: 84px; width: 84px; aspect-ratio: 14 / 24; pointer-events: none;
-  background: {orion_lines('#c4b5fd')} center / contain no-repeat; opacity: 0.85;
+  display: block; position: absolute; right: 44px; bottom: 84px; width: 130px; aspect-ratio: {ORION_RATIO:.4f};
+  pointer-events: none; background: {ORION_LINES} center / contain no-repeat; opacity: 0.9;
 }}
 html[data-pack='space'][data-theme='light'][data-decor='on'] .tf-canvas-orion {{
-  background-image: {orion_lines('#7c3aed')}; opacity: 0.8;
+  filter: invert(1) hue-rotate(180deg) saturate(1.4); opacity: 0.85;
 }}
-.tf-canvas-orion i {{
-  position: absolute; width: var(--d); height: var(--d); margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2);
-  border-radius: 50%; background: var(--c, #f5f3ff); box-shadow: 0 0 5px 1px var(--g, rgb(200 210 255 / 0.75));
-}}
-html[data-pack='space'][data-theme='light'] .tf-canvas-orion i {{
-  background: var(--cl, #6d28d9); box-shadow: 0 0 4px 1px var(--gl, rgb(124 58 237 / 0.4));
-}}
+.tf-canvas-orion i {{ position: absolute; aspect-ratio: 1; background: center / contain no-repeat; }}
 {ORION_RULES}
 html[data-pack='space'][data-decor='on']:not([data-anim='none']) .tf-canvas-orion i {{
-  animation: tf-orion-twinkle var(--t) ease-in-out var(--dl) infinite;
+  animation: tf-orion-twinkle var(--t) ease-in-out var(--dl) infinite alternate;
 }}
 @keyframes tf-orion-twinkle {{
-  0%, 100% {{ opacity: 0.55; transform: scale(0.85); }}
-  50% {{ opacity: 1; transform: scale(1.2); }}
+  from {{ opacity: 0.7; transform: scale(0.85) rotate(-2deg); }}
+  to {{ opacity: 1; transform: scale(1.12) rotate(2deg); }}
 }}
 @media (prefers-reduced-motion: reduce) {{
   .tf-canvas-orion i {{ animation: none !important; }}

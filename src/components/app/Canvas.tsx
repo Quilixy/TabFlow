@@ -104,8 +104,8 @@ const ROOT_KEY = '__root__';
 const NO_FOLDERS: Workspace[] = [];
 const NO_TABS: SavedTab[] = [];
 const NO_ROWS: PreviewRow[] = [];
-/** Uzay temasındaki Avcı takımyıldızının yıldız sayısı (konum ve parlaklıkları canvas-scene.css'te). */
-const ORION_STARS = Array.from({ length: 9 }, (_, i) => i);
+/** Uzay temasındaki Avcı takımyıldızının yıldız sayısı; scripts/decor/orion.py ile aynı olmalı (konum ve görseller canvas-scene.css'te). */
+const ORION_STARS = Array.from({ length: 20 }, (_, i) => i);
 
 /** Klasör başına görünüm (kaydırma/yakınlaştırma) bu oturum boyunca hatırlanır. */
 const viewMemory = new Map<string, View>();
