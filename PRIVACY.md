@@ -19,6 +19,7 @@ All of this is kept in your browser's local extension storage (`chrome.storage.l
 - It does **not** send any data to any server. TabFlow has no server, no account system and makes no network requests of its own.
 - It does **not** use analytics, tracking, advertising or third-party services.
 - It does **not** sell, share or transfer your data to anyone.
+- The use of information received from Chrome APIs adheres to the [Chrome Web Store User Data Policy](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq), including the Limited Use requirements.
 - It does **not** read the content of the pages you visit. It only reads the URL and title of tabs, when you save them, when it shows your open tabs, and to tell you whether the current page is already saved.
 
 ## Files on your disk
@@ -67,6 +68,7 @@ Bunların hepsi tarayıcınızın yerel eklenti deposunda (`chrome.storage.local
 - Hiçbir veriyi hiçbir sunucuya **göndermez**. TabFlow'un sunucusu ve hesap sistemi yoktur, kendisi hiçbir ağ isteği yapmaz.
 - Analiz, izleme, reklam ya da üçüncü taraf hizmeti **kullanmaz**.
 - Verilerinizi kimseye **satmaz, paylaşmaz, aktarmaz**.
+- Chrome API'lerinden alınan bilgilerin kullanımı, Sınırlı Kullanım (Limited Use) koşulları dahil [Chrome Web Store Kullanıcı Verileri Politikası](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq)'na uyar.
 - Ziyaret ettiğiniz sayfaların içeriğini **okumaz**. Sekmelerin yalnızca adresini ve başlığını okur: kaydettiğinizde, açık sekmelerinizi gösterirken ve o anki sayfanın zaten kayıtlı olup olmadığını söylerken.
 
 ### Diskinizdeki dosyalar
