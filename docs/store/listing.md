@@ -7,7 +7,7 @@ Mağaza geliştirici panelindeki formlara kopyalanacak metinler. Görseller bu k
 
 - **Category:** Productivity → Workflow & Planning
 - **Language:** English (varsayılan), ardından *Add localization* ile Turkish
-- **Icon:** `public/icons/icon-128.png`
+- **Icon:** `docs/store/store-icon.png` (mağaza yönergesi: 96×96 simge + 16 px saydam kenar; `public/icons/icon-128.png`'den üretildi)
 - **Screenshots (1280×800):** `screenshot-1.jpg` … `screenshot-5.jpg`
 - **Small promo tile (440×280):** `promo-small.jpg`
 - **Marquee promo tile (1400×560):** `promo-marquee.jpg`
