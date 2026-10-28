@@ -1,6 +1,6 @@
 /*
  * Klasör kartlarının köşe süsleri (Sakura ve Uzay paketleri, yalnızca "Dekoratif efektler" açıkken).
- * ÜRETİLMİŞ DOSYA: desenler bir betikle SVG'den üretildi. Köşe ve desen her klasör için kimliğinden türetilir
+ * ÜRETİLMİŞ DOSYA: scripts/decor/card_decor.py üretir (npm run decor); elle düzenlemeyin. Köşe ve desen her klasör için kimliğinden türetilir
  * (FolderCard: data-decor-corner / data-decor-variant), böylece kartlar her açılışta aynı görünür.
  * Sol üst köşe hiç kullanılmaz: orada klasör simgesi durur.
  */

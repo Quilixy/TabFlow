@@ -1,4 +1,4 @@
-/* Tuval manzarası (yalnızca tam ekran uygulama). ÜRETİLMİŞ DOSYA: gömülü SVG'ler bir betikle üretildi; Sakura dalları ve Uzay galaksisi src/assets'teki dosyalardan gelir. */
+/* Tuval manzarası (yalnızca tam ekran uygulama). ÜRETİLMİŞ DOSYA: scripts/decor/scene.py üretir (npm run decor); elle düzenlemeyin. Sakura dalları ve Uzay galaksisi src/assets'ten gelir. */
 
 /* ---- Tuval manzarası: kartların arkasında, kaydırma/yakınlaştırmadan bağımsız ---- */
 /* Sakura: sol alttan yükselen kiraz dalları (SakuraScene: .tf-scene-tree > i). Klasör paneli ve tuvalin

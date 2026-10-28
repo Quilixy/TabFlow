@@ -65,6 +65,7 @@ Uçtan uca testler şunları da kapsar:
 | `npm run test:e2e` | Derleyip eklentiyi gerçek Chromium'a yükleyerek uçtan uca testleri çalıştırır (Playwright; ilk seferde `npx playwright install chromium`) |
 | `npm run typecheck` | TypeScript tip kontrolü |
 | `npm run lint` | ESLint |
+| `npm run decor` | Tema süslerini yeniden üretir (Python 3.10+; ayrıntı aşağıda) |
 
 ## İzinler
 
@@ -121,8 +122,26 @@ src/
   services/     React'ten bağımsız sekme açma (popup bunu service worker'a yaptırır)
   i18n/         arayüz metinleri: tr.ts (kaynak) ve en.ts; t('anahtar', { parametre })
   utils/        saf mantık (ağaç, arama, yedek, tuval matematiği) ve testleri
-  styles/       tema değişkenleri
+  styles/       tema değişkenleri; card-decor.css ve canvas-scene.css üretilmiş dosyalardır
+  assets/       tema görselleri (Sakura dalı, Uzay galaksisi)
+scripts/decor/  tema süslerini üreten Python betikleri
 ```
+
+### Tema süsleri
+
+Kart köşe süsleri, tuval manzarası ve bazı görseller elle değil, `scripts/decor/` altındaki betiklerle
+üretilir. Bir süsü değiştirmek için betiği düzenleyip `npm run decor` çalıştırın; üretilen dosyaları
+(`src/styles/card-decor.css`, `src/styles/canvas-scene.css`, `src/assets/uzay-galaksi-*.svg`,
+`src/assets/sakura-dal-*.svg`) elle düzenlemeyin.
+
+- `card_decor.py`: kart köşe süsleri, Uzay'ın yıldız saçılması, ay ve uydu görselleri (popup'ta da yüklenir).
+- `scene.py`: tam ekran tuval manzarası (galaksi, Avcı takımyıldızı, Sakura dalları ve yaprakların yerleşimi).
+- `split_tree.py`: `src/assets/sakura-saf-agac-oshima.svg` dosyasını üst/orta/alt dal parçalarına böler.
+  Kiraz ağacını değiştirmek için bu kaynak dosyayı güncelleyip `npm run decor` çalıştırın.
+
+Görsellerin içinde animasyon olmamalıdır: Chrome, animasyonlu bir SVG görselini her karede yeniden çizer
+ve sürekli işlemci yükü oluşturur (bir birim testi bunu denetler). Hareket gerekiyorsa ayrı HTML öğeleri
+yalnızca `transform`/`opacity` ile canlandırılır.
 
 ## Çeviri
 

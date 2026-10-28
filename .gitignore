@@ -31,3 +31,6 @@ repomix-output.*
 # Uçtan uca test çıktıları
 test-results/
 playwright-report/
+
+# Python (scripts/decor)
+__pycache__/
